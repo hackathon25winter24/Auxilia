@@ -1,0 +1,30 @@
+# 実行ファイル (ビルドされたバイナリ)
+# Windows用の .exe や Mac/Linux用のバイナリを除外
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+out/
+
+# Goの依存関係管理 (通常は go.mod と go.sum は含めるが、ベンダリングファイルは除外)
+vendor/
+
+# テスト結果やキャッシュ
+*.test
+*.out
+.cache/
+
+# 開発ツール・エディタの設定ファイル
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS固有のファイル
+.DS_Store
+Thumbs.db
+
+# 環境変数（将来的にAPIキーなどを使う場合）
+.env
