@@ -1,6 +1,6 @@
 name: 🐛 バグ報告
 description: バグを報告する
-labels: ["bug"]
+labels: ["🐞バグ"]
 body:
   - type: markdown
     attributes:
