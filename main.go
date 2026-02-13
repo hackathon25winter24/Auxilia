@@ -1,9 +1,22 @@
 package main
 
 import (
+	"context"
+	"log"
 	"fmt"
 	"net/http"
 	"os" // 環境変数を読み込むために追加
+
+
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"gorm.io/driver/mysql" // MariaDB用
+	"gorm.io/gorm"
+
+	"auxilia/pb"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
