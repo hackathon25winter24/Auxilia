@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # 1. データベース (MariaDB)
+  db:
+    image: mariadb:10.11
+    container_name: auxilia-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: auxilia_db
+      MYSQL_USER: auxilia_user
+      MYSQL_PASSWORD: auxilia_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+
+  # 2. Go アプリケーション
+  app:
+    build: .
+    container_name: auxilia-app
+    ports:
+      - "8080:8080"
+    environment:
+      # ここを db (サービス名) にするのがポイント！
+      - NS_MARIADB_HOSTNAME=db 
+      - NS_MARIADB_PORT=3306
+      - NS_MARIADB_USER=auxilia_user
+      - NS_MARIADB_PASSWORD=auxilia_password
+      - NS_MARIADB_DATABASE=auxilia_db
+      - PORT=8080
+    depends_on:
+      - db
+
+volumes:
+  db-data:
