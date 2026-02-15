@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package user;
+option go_package = "./pb";
+option csharp_namespace = "Game.Network";
+
+service UserService {
+  // ID(UUID文字列)で検索
+  rpc GetUser (GetUserRequest) returns (UserResponse);
+  // ユーザー作成
+  rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  // ↓ 追加：全ユーザー取得
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+    // ↓ 追加：Hashを使ってログインする
+    rpc Login(LoginRequest) returns (UserResponse);
+}
+
+// リクエストは空でもOK
+message ListUsersRequest {}
+
+
+// 繰り返される（List形式）UserResponseを返す
+message ListUsersResponse {
+    repeated UserResponse users = 1;
+}
+
+// ↓ 追加：ログインに必要なのはHashのみ（パスワード認証を追加する場合はここを拡張します）
+message LoginRequest {
+    string hash = 1;
+}
+
+message GetUserRequest {
+  string id = 1; // UUIDは文字列として受け取る
+}
+
+message CreateUserRequest {
+  string hash = 1;
+  int32 story = 2; // Goのintに合わせてint32またはint64
+  int32 rate = 3;
+}
+
+message UserResponse {
+  string id = 1;   // UUID
+  string hash = 2;
+  int32 story = 3;
+  int32 rate = 4;
+}
