@@ -1,28 +1,36 @@
 package gormdb
 
 import (
-	"fmt"
-	"log"
-
-	"auxilia/config"
-	"auxilia/domain/model"
-
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+    "fmt"
+    "time"
+    "auxilia/config"
+    "auxilia/domain/model"
+    "gorm.io/driver/mysql"
+    "gorm.io/gorm"
 )
 
 func NewGormDB(cfg config.Config) (*gorm.DB, error) {
-    dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-        cfg.DBUser, cfg.DBPass, cfg.DBHost, cfg.DBPort, cfg.DBName)
+    var db *gorm.DB
+    var err error
+    dsn := cfg.DSN() // Config 側のメソッドを呼び出すだけ
 
-    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-    if err != nil {
-        return nil, err
+    // リトライ処理（Docker起動時の安定性のために重要）
+    for i := 0; i < 5; i++ {
+        db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+        if err == nil {
+            break
+        }
+        fmt.Printf("Attempt %d: Failed to connect to DB, retrying...\n", i+1)
+        time.Sleep(3 * time.Second)
     }
 
+    if err != nil {
+        return nil, fmt.Errorf("could not connect to DB after retries: %w", err)
+    }
+
+    // マイグレーション
     if err := db.AutoMigrate(&model.User{}); err != nil {
-        log.Printf("AutoMigrate error: %v", err)
-        return nil, err
+        return nil, fmt.Errorf("migration failed: %w", err)
     }
 
     return db, nil

@@ -48,3 +48,9 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
+
+//DSNを生成
+func (c Config) DSN() string {
+    return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+        c.DBUser, c.DBPass, c.DBHost, c.DBPort, c.DBName)
+}
