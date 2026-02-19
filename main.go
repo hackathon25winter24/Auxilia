@@ -42,27 +42,31 @@ func main() {
 	httpHandler := httpserver.NewHandler(s)
 
 	// 3. リクエストの種類に応じて振り分けるハンドラーを定義
-	// gRPC通信（grpcurlなど）と gRPC-Web通信（ブラウザ）を1つのポートで受ける
-	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// gRPC-Web または 通常のHTTPリクエストの場合
-		if r.ProtoMajor == 1 || r.Header.Get("Content-Type") == "application/grpc-web" {
-			httpHandler.ServeHTTP(w, r)
-			return
-		}
-		// 生のgRPCリクエスト（HTTP/2）の場合
-		s.ServeHTTP(w, r)
-	})
+  rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // Content-Type を取得
+    ct := r.Header.Get("Content-Type")
 
-	// 4. HTTP/2を有効にしたサーバー設定（h2c = HTTP/2 without TLS）
-	// grpcurlは通常HTTP/2で通信するため、これが必要です
-	h2s := &http2.Server{}
-	httpServer := &http.Server{
-		Addr:    ":" + cfg.AppPort,
-		Handler: h2c.NewHandler(rootHandler, h2s),
-	}
+    // gRPC-Web (HTTP/1.1 or Content-Type) の場合は httpHandler へ
+    // ブラウザからの GET リクエストなどもこちらに含まれます
+    if r.ProtoMajor == 1 || ct == "application/grpc-web" || ct == "application/grpc-web+proto" {
+      httpHandler.ServeHTTP(w, r)
+      return
+    }
 
-	log.Printf("Server listening at %s (supporting both gRPC and gRPC-Web)", cfg.AppPort)
-	if err := httpServer.ListenAndServe(); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+    // それ以外（生の gRPC / HTTP/2）はすべて gRPC サーバーへ
+    s.ServeHTTP(w, r)
+  })
+
+  // 4. HTTP/2 (h2c) を有効にしたサーバー設定
+  h2s := &http2.Server{}
+  httpServer := &http.Server{
+    Addr:    ":" + cfg.AppPort,
+    Handler: h2c.NewHandler(rootHandler, h2s),
+    // タイムアウト対策として、コネクション維持の設定を明示的に入れても良いです
+  }
+
+  log.Printf("Server listening at %s (supporting both gRPC and gRPC-Web)", cfg.AppPort)
+  if err := httpServer.ListenAndServe(); err != nil {
+    log.Fatalf("failed to serve: %v", err)
+  }
 }
