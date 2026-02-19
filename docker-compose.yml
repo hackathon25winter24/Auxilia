@@ -1,0 +1,40 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: auxilia-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: auxilia_db
+      MYSQL_USER: auxilia_user
+      MYSQL_PASSWORD: auxilia_password
+    # ports: "8080:8080" はここから削除！
+    # もしDBを外から見たいなら "3306:3306" にする
+    volumes:
+      - db-data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: auxilia-app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - NS_MARIADB_HOSTNAME=db 
+      - NS_MARIADB_PORT=3306
+      - NS_MARIADB_USER=auxilia_user
+      - NS_MARIADB_PASSWORD=auxilia_password
+      - NS_MARIADB_DATABASE=auxilia_db
+      - PORT=8080
+    depends_on:
+      - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auxilia-router.rule=Host(`auxilia.trap.show`)"
+      - "traefik.http.routers.auxilia-router.tls=true"
+      - "traefik.http.routers.auxilia-router.service=auxilia-service"
+      - "traefik.http.services.auxilia-service.loadbalancer.server.port=8080"
+      # - "traefik.http.services.auxilia-service.loadbalancer.server.scheme=h2c"
+
+volumes:
+  db-data:
