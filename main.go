@@ -12,7 +12,7 @@ import (
 	cfgpkg "auxilia/config"
 	handlergrpc "auxilia/handler/grpc"
 	httpserver "auxilia/handler/http"
-	gormdb "auxilia/infrastructure/gorm"
+	gorm "auxilia/infrastructure/gorm"
 	"auxilia/pb"
 )
 
@@ -22,15 +22,21 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	db, err := gormdb.NewGormDB(cfg)
+	db, err := gorm.NewGormDB(cfg)
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	// 1. gRPCサーバーの作成
-	s := grpc.NewServer()
-	pb.RegisterUserServiceServer(s, handlergrpc.NewServer(db))
-	reflection.Register(s)
+	// gRPCサーバーの作成
+  s := grpc.NewServer()
+  // リポジトリを初期化 (db は *gorm.DB)
+  userRepo := gorm.NewUserRepository(db)
+  // サーバーハンドラをリポジトリを使って初期化
+  userHandler := handlergrpc.NewServer(userRepo)
+  // 4. サービスを登録
+  pb.RegisterUserServiceServer(s, userHandler)
+  // 5. リフレクションを登録
+  reflection.Register(s)
 
 	// 2. gRPC-Webハンドラーの作成
 	httpHandler := httpserver.NewHandler(s)
