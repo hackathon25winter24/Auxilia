@@ -3,11 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"golang.org/x/net/http2"
-  "golang.org/x/net/http2/h2c"
+	"golang.org/x/net/http2/h2c"
 
 	cfgpkg "auxilia/config"
 	handlergrpc "auxilia/handler/grpc"
@@ -27,46 +28,43 @@ func main() {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	// gRPCサーバーの作成
-  s := grpc.NewServer()
-  // リポジトリを初期化 (db は *gorm.DB)
-  userRepo := gorm.NewUserRepository(db)
-  // サーバーハンドラをリポジトリを使って初期化
-  userHandler := handlergrpc.NewServer(userRepo)
-  // 4. サービスを登録
-  pb.RegisterUserServiceServer(s, userHandler)
-  // 5. リフレクションを登録
-  reflection.Register(s)
+	// 1. gRPCサーバーの作成と設定
+	s := grpc.NewServer()
+	userRepo := gorm.NewUserRepository(db)
+	userHandler := handlergrpc.NewServer(userRepo)
+	pb.RegisterUserServiceServer(s, userHandler)
+	reflection.Register(s)
 
 	// 2. gRPC-Webハンドラーの作成
+	// 通常、httpserver.NewHandler(s) 内で grpcweb.WrapServer(s) が呼ばれている前提です
 	httpHandler := httpserver.NewHandler(s)
 
-	// 3. リクエストの種類に応じて振り分けるハンドラーを定義
-  rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    // Content-Type を取得
-    ct := r.Header.Get("Content-Type")
+	// 3. ハイブリッド・ハンドラー
+	// 自前で複雑な条件分岐をせず、Content-Typeのみで「生のgRPC」か「それ以外」かを判定します
+	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType := r.Header.Get("Content-Type")
 
-    // gRPC-Web (HTTP/1.1 or Content-Type) の場合は httpHandler へ
-    // ブラウザからの GET リクエストなどもこちらに含まれます
-    if r.ProtoMajor == 1 || ct == "application/grpc-web" || ct == "application/grpc-web+proto" {
-      httpHandler.ServeHTTP(w, r)
-      return
-    }
+		// 純粋な gRPC (HTTP/2) の場合
+		if r.ProtoMajor == 2 && strings.HasPrefix(contentType, "application/grpc") {
+			s.ServeHTTP(w, r)
+			return
+		}
 
-    // それ以外（生の gRPC / HTTP/2）はすべて gRPC サーバーへ
-    s.ServeHTTP(w, r)
-  })
+		// それ以外 (gRPC-Web, ブラウザのGET/POST, HTTP/1.1) はすべて httpHandler へ
+		// httpHandler (grpcweb) は内部で gRPC-Web かどうかを判別して処理してくれます
+		httpHandler.ServeHTTP(w, r)
+	})
 
-  // 4. HTTP/2 (h2c) を有効にしたサーバー設定
-  h2s := &http2.Server{}
-  httpServer := &http.Server{
-    Addr:    ":" + cfg.AppPort,
-    Handler: h2c.NewHandler(rootHandler, h2s),
-    // タイムアウト対策として、コネクション維持の設定を明示的に入れても良いです
-  }
+	// 4. H2C (HTTP/2 Cleartext) サーバーの設定
+	// Traefikとの相性を高めるため、標準的な設定にします
+	h2s := &http2.Server{}
+	httpServer := &http.Server{
+		Addr:    ":" + cfg.AppPort,
+		Handler: h2c.NewHandler(rootHandler, h2s),
+	}
 
-  log.Printf("Server listening at %s (supporting both gRPC and gRPC-Web)", cfg.AppPort)
-  if err := httpServer.ListenAndServe(); err != nil {
-    log.Fatalf("failed to serve: %v", err)
-  }
+	log.Printf("Server listening at %s (Dual Mode: gRPC & gRPC-Web)", cfg.AppPort)
+	if err := httpServer.ListenAndServe(); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

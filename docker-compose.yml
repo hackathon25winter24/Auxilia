@@ -34,7 +34,7 @@ services:
       - "traefik.http.routers.auxilia-router.tls=true"
       - "traefik.http.routers.auxilia-router.service=auxilia-service"
       - "traefik.http.services.auxilia-service.loadbalancer.server.port=8080"
-      - "traefik.http.services.auxilia-service.loadbalancer.server.scheme=h2c"
+      # - "traefik.http.services.auxilia-service.loadbalancer.server.scheme=h2c"
 
 volumes:
   db-data:
