@@ -1,5 +1,4 @@
 services:
-  # 1. データベース (MariaDB)
   db:
     image: mariadb:10.11
     container_name: auxilia-db
@@ -9,19 +8,14 @@ services:
       MYSQL_DATABASE: auxilia_db
       MYSQL_USER: auxilia_user
       MYSQL_PASSWORD: auxilia_password
-    ports:
-      - "3306:3306"
     volumes:
       - db-data:/var/lib/mysql
 
-  # 2. Go アプリケーション
   app:
     build: .
     container_name: auxilia-app
-    ports:
-      - "8080:8080"
+    restart: always
     environment:
-      # ここを db (サービス名) にするのがポイント！
       - NS_MARIADB_HOSTNAME=db 
       - NS_MARIADB_PORT=3306
       - NS_MARIADB_USER=auxilia_user
@@ -30,6 +24,12 @@ services:
       - PORT=8080
     depends_on:
       - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auxilia-router.rule=Host(`auxilia.trap.show`)"
+      - "traefik.http.routers.auxilia-router.tls=true"
+      - "traefik.http.services.auxilia-service.loadbalancer.server.port=8080"
+      - "traefik.http.services.auxilia-service.loadbalancer.server.scheme=h2c"
 
 volumes:
   db-data:
