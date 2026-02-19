@@ -3,6 +3,7 @@ package handlergrpc
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"auxilia/domain/model"
 	"auxilia/pb"
@@ -67,6 +68,7 @@ func (s *Server) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.UserR
 
 // ListUsers: 全ユーザー一覧取得
 func (s *Server) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
+	log.Printf("Received ListUsers request: %v", req)
 	users, err := s.userRepo.FindAll()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch users: %v", err)
