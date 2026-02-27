@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "auxilia/pb";
+
+// 状態異常の情報
+message CharacterCondition {
+  uint32 condition_id = 1;
+  uint32 lasting_turn = 2;
+}
+
+// キャラクター個別の情報
+message UniqueCharacter {
+  uint32 character_id = 1;
+  int32 hp = 2;
+  int32 x = 3;
+  int32 y = 4;
+  bool is_1p = 5;
+  repeated CharacterCondition conditions = 6;
+}
+
+// 試合保存のリクエスト
+message SaveGameRequest {
+  uint32 room_id = 1;
+  string player_1p_id = 2;
+  string player_2p_id = 3;
+  int32 base_hp_1p = 4;
+  int32 base_hp_2p = 5;
+  uint32 turn = 6;
+  repeated UniqueCharacter characters = 7;
+}
+
+message SaveGameResponse {
+  bool success = 1;
+}
+
+// 試合削除のリクエスト
+message DeleteGameRequest {
+  uint32 room_id = 1;
+}
+
+message DeleteGameResponse {
+  bool success = 1;
+}
+
+message ListGamesRequest {} 
+
+message ListGamesResponse {
+  repeated SaveGameRequest games = 1; 
+}
+
+service GameService {
+  rpc SaveGame(SaveGameRequest) returns (SaveGameResponse);
+  rpc DeleteGame(DeleteGameRequest) returns (DeleteGameResponse);
+  rpc ListGames(ListGamesRequest) returns (ListGamesResponse); 
+}
