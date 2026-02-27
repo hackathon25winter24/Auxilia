@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetUser_FullMethodName    = "/user.UserService/GetUser"
-	UserService_CreateUser_FullMethodName = "/user.UserService/CreateUser"
-	UserService_ListUsers_FullMethodName  = "/user.UserService/ListUsers"
-	UserService_Login_FullMethodName      = "/user.UserService/Login"
+	UserService_GetUser_FullMethodName       = "/user.UserService/GetUser"
+	UserService_GetUserByName_FullMethodName = "/user.UserService/GetUserByName"
+	UserService_CreateUser_FullMethodName    = "/user.UserService/CreateUser"
+	UserService_UpdateUser_FullMethodName    = "/user.UserService/UpdateUser"
+	UserService_ListUsers_FullMethodName     = "/user.UserService/ListUsers"
+	UserService_Login_FullMethodName         = "/user.UserService/Login"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -31,11 +33,15 @@ const (
 type UserServiceClient interface {
 	// ID(UUID文字列)で検索
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	// 名前で検索（追加）
+	GetUserByName(ctx context.Context, in *NameRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	// ユーザー作成
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
-	// ↓ 追加：全ユーザー取得
+	// ユーザー情報の更新（追加）
+	UpdateUser(ctx context.Context, in *UserResponse, opts ...grpc.CallOption) (*UserResponse, error)
+	// 全ユーザー取得
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// ↓ 追加：Hashを使ってログインする
+	// Hashを使ってログインする
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*UserResponse, error)
 }
 
@@ -57,10 +63,30 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opt
 	return out, nil
 }
 
+func (c *userServiceClient) GetUserByName(ctx context.Context, in *NameRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserByName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserResponse)
 	err := c.cc.Invoke(ctx, UserService_CreateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUser(ctx context.Context, in *UserResponse, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,11 +119,15 @@ func (c *userServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 type UserServiceServer interface {
 	// ID(UUID文字列)で検索
 	GetUser(context.Context, *GetUserRequest) (*UserResponse, error)
+	// 名前で検索（追加）
+	GetUserByName(context.Context, *NameRequest) (*UserResponse, error)
 	// ユーザー作成
 	CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error)
-	// ↓ 追加：全ユーザー取得
+	// ユーザー情報の更新（追加）
+	UpdateUser(context.Context, *UserResponse) (*UserResponse, error)
+	// 全ユーザー取得
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// ↓ 追加：Hashを使ってログインする
+	// Hashを使ってログインする
 	Login(context.Context, *LoginRequest) (*UserResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -112,8 +142,14 @@ type UnimplementedUserServiceServer struct{}
 func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserRequest) (*UserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
 }
+func (UnimplementedUserServiceServer) GetUserByName(context.Context, *NameRequest) (*UserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserByName not implemented")
+}
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UserResponse) (*UserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
 }
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListUsers not implemented")
@@ -160,6 +196,24 @@ func _UserService_GetUser_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetUserByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserByName(ctx, req.(*NameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
@@ -174,6 +228,24 @@ func _UserService_CreateUser_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserResponse)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUser(ctx, req.(*UserResponse))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -226,8 +298,16 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_GetUser_Handler,
 		},
 		{
+			MethodName: "GetUserByName",
+			Handler:    _UserService_GetUserByName_Handler,
+		},
+		{
 			MethodName: "CreateUser",
 			Handler:    _UserService_CreateUser_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _UserService_UpdateUser_Handler,
 		},
 		{
 			MethodName: "ListUsers",

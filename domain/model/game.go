@@ -33,3 +33,4 @@ type CharacterCondition struct {
 	ConditionID       int
 	LastingTurn       int
 }
+

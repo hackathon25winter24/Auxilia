@@ -2,13 +2,22 @@ package gorm
 
 import (
 	"context"
+	"auxilia/domain/interface"
 	"auxilia/domain/model"
 	"gorm.io/gorm"
 )
 
+// GameRepository は GORM を使った実装です。インターフェースは
+// domain/interface/game.go で定義されています。
+//
+// コンパイル時にインターフェースを満たしていることをチェックするため、
+// 空白識別子アサーションを配置しておきます。
+
 type GameRepository struct {
 	db *gorm.DB
 }
+
+var _ repository.GameRepository = (*GameRepository)(nil)
 
 func NewGameRepository(db *gorm.DB) *GameRepository {
 	return &GameRepository{db: db}
@@ -53,4 +62,16 @@ func (r *GameRepository) ListGames(ctx context.Context) ([]model.GameData, error
 		Preload("Characters.Conditions"). 
 		Find(&games).Error
 	return games, err
+}
+// GetGame retrieves a single game record by room ID, including related characters and conditions.
+func (r *GameRepository) GetGame(ctx context.Context, roomID uint) (*model.GameData, error) {
+    var game model.GameData
+    err := r.db.WithContext(ctx).
+        Preload("Characters.Conditions").
+        Where("room_id = ?", roomID).
+        First(&game).Error
+    if err != nil {
+        return nil, err
+    }
+    return &game, nil
 }

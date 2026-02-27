@@ -1,47 +1,61 @@
 syntax = "proto3";
 
 package user;
-option go_package = "./pb";
+
+option go_package = "auxilia/pb";
 option csharp_namespace = "Game.Network";
 
 service UserService {
   // ID(UUID文字列)で検索
   rpc GetUser (GetUserRequest) returns (UserResponse);
+  
+  // 名前で検索（追加）
+  rpc GetUserByName (NameRequest) returns (UserResponse);
+  
   // ユーザー作成
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
-  // ↓ 追加：全ユーザー取得
-    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
-    // ↓ 追加：Hashを使ってログインする
-    rpc Login(LoginRequest) returns (UserResponse);
+  
+  // ユーザー情報の更新（追加）
+  rpc UpdateUser (UserResponse) returns (UserResponse);
+  
+  // 全ユーザー取得
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  
+  // Hashを使ってログインする
+  rpc Login(LoginRequest) returns (UserResponse);
 }
 
-// リクエストは空でもOK
+// --- メッセージ定義 ---
+
 message ListUsersRequest {}
 
-
-// 繰り返される（List形式）UserResponseを返す
 message ListUsersResponse {
-    repeated UserResponse users = 1;
+  repeated UserResponse users = 1;
 }
 
-// ↓ 追加：ログインに必要なのはHashのみ（パスワード認証を追加する場合はここを拡張します）
 message LoginRequest {
-    string hash = 1;
+  string hash = 1;
+}
+
+message NameRequest {
+  string name = 1;
 }
 
 message GetUserRequest {
-  string id = 1; // UUIDは文字列として受け取る
+  string id = 1; 
 }
 
 message CreateUserRequest {
-  string hash = 1;
-  int32 story = 2; // Goのintに合わせてint32またはint64
-  int32 rate = 3;
-}
-
-message UserResponse {
-  string id = 1;   // UUID
+  string name = 1;
   string hash = 2;
   int32 story = 3;
   int32 rate = 4;
+}
+
+message UserResponse {
+  string id = 1;
+  string name = 2;
+  string hash = 3;
+  int32 story = 4;
+  int32 rate = 5;
 }

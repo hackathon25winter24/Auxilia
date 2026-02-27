@@ -385,6 +385,86 @@ func (x *DeleteGameResponse) GetSuccess() bool {
 	return false
 }
 
+type ListGamesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGamesRequest) Reset() {
+	*x = ListGamesRequest{}
+	mi := &file_game_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGamesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGamesRequest) ProtoMessage() {}
+
+func (x *ListGamesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGamesRequest.ProtoReflect.Descriptor instead.
+func (*ListGamesRequest) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{6}
+}
+
+type ListGamesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Games         []*SaveGameRequest     `protobuf:"bytes,1,rep,name=games,proto3" json:"games,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGamesResponse) Reset() {
+	*x = ListGamesResponse{}
+	mi := &file_game_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGamesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGamesResponse) ProtoMessage() {}
+
+func (x *ListGamesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGamesResponse.ProtoReflect.Descriptor instead.
+func (*ListGamesResponse) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListGamesResponse) GetGames() []*SaveGameRequest {
+	if x != nil {
+		return x.Games
+	}
+	return nil
+}
+
 var File_game_proto protoreflect.FileDescriptor
 
 const file_game_proto_rawDesc = "" +
@@ -422,11 +502,15 @@ const file_game_proto_rawDesc = "" +
 	"\x11DeleteGameRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\".\n" +
 	"\x12DeleteGameResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess2\x81\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x12\n" +
+	"\x10ListGamesRequest\">\n" +
+	"\x11ListGamesResponse\x12)\n" +
+	"\x05games\x18\x01 \x03(\v2\x13.pb.SaveGameRequestR\x05games2\xbb\x01\n" +
 	"\vGameService\x125\n" +
 	"\bSaveGame\x12\x13.pb.SaveGameRequest\x1a\x14.pb.SaveGameResponse\x12;\n" +
 	"\n" +
-	"DeleteGame\x12\x15.pb.DeleteGameRequest\x1a\x16.pb.DeleteGameResponseB\fZ\n" +
+	"DeleteGame\x12\x15.pb.DeleteGameRequest\x1a\x16.pb.DeleteGameResponse\x128\n" +
+	"\tListGames\x12\x14.pb.ListGamesRequest\x1a\x15.pb.ListGamesResponseB\fZ\n" +
 	"auxilia/pbb\x06proto3"
 
 var (
@@ -441,7 +525,7 @@ func file_game_proto_rawDescGZIP() []byte {
 	return file_game_proto_rawDescData
 }
 
-var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_game_proto_goTypes = []any{
 	(*CharacterCondition)(nil), // 0: pb.CharacterCondition
 	(*UniqueCharacter)(nil),    // 1: pb.UniqueCharacter
@@ -449,19 +533,24 @@ var file_game_proto_goTypes = []any{
 	(*SaveGameResponse)(nil),   // 3: pb.SaveGameResponse
 	(*DeleteGameRequest)(nil),  // 4: pb.DeleteGameRequest
 	(*DeleteGameResponse)(nil), // 5: pb.DeleteGameResponse
+	(*ListGamesRequest)(nil),   // 6: pb.ListGamesRequest
+	(*ListGamesResponse)(nil),  // 7: pb.ListGamesResponse
 }
 var file_game_proto_depIdxs = []int32{
 	0, // 0: pb.UniqueCharacter.conditions:type_name -> pb.CharacterCondition
 	1, // 1: pb.SaveGameRequest.characters:type_name -> pb.UniqueCharacter
-	2, // 2: pb.GameService.SaveGame:input_type -> pb.SaveGameRequest
-	4, // 3: pb.GameService.DeleteGame:input_type -> pb.DeleteGameRequest
-	3, // 4: pb.GameService.SaveGame:output_type -> pb.SaveGameResponse
-	5, // 5: pb.GameService.DeleteGame:output_type -> pb.DeleteGameResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 2: pb.ListGamesResponse.games:type_name -> pb.SaveGameRequest
+	2, // 3: pb.GameService.SaveGame:input_type -> pb.SaveGameRequest
+	4, // 4: pb.GameService.DeleteGame:input_type -> pb.DeleteGameRequest
+	6, // 5: pb.GameService.ListGames:input_type -> pb.ListGamesRequest
+	3, // 6: pb.GameService.SaveGame:output_type -> pb.SaveGameResponse
+	5, // 7: pb.GameService.DeleteGame:output_type -> pb.DeleteGameResponse
+	7, // 8: pb.GameService.ListGames:output_type -> pb.ListGamesResponse
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_game_proto_init() }
@@ -475,7 +564,7 @@ func file_game_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_proto_rawDesc), len(file_game_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

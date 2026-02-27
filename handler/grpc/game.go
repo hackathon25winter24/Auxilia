@@ -4,17 +4,17 @@ import (
 	"context"
 	"log"
 
+	"auxilia/domain/interface"
 	"auxilia/domain/model"
-	"auxilia/infrastructure/gorm"
 	"auxilia/pb"
 )
 
 type GameHandler struct {
 	pb.UnimplementedGameServiceServer
-	repo gorm.GameRepository
+	repo repository.GameRepository
 }
 
-func NewGameHandler(repo gorm.GameRepository) *GameHandler {
+func NewGameHandler(repo repository.GameRepository) *GameHandler {
 	return &GameHandler{
 		repo: repo,
 	}
