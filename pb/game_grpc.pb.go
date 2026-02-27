@@ -19,17 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GameService_SaveGame_FullMethodName   = "/pb.GameService/SaveGame"
-	GameService_DeleteGame_FullMethodName = "/pb.GameService/DeleteGame"
-	GameService_ListGames_FullMethodName  = "/pb.GameService/ListGames"
+	GameService_SaveGame_FullMethodName   = "/game.GameService/SaveGame"
+	GameService_DeleteGame_FullMethodName = "/game.GameService/DeleteGame"
+	GameService_ListGames_FullMethodName  = "/game.GameService/ListGames"
 )
 
 // GameServiceClient is the client API for GameService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GameServiceClient interface {
+	// 試合状況を保存
 	SaveGame(ctx context.Context, in *SaveGameRequest, opts ...grpc.CallOption) (*SaveGameResponse, error)
+	// 試合状況を削除
 	DeleteGame(ctx context.Context, in *DeleteGameRequest, opts ...grpc.CallOption) (*DeleteGameResponse, error)
+	// 保存されている試合一覧を取得
 	ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (*ListGamesResponse, error)
 }
 
@@ -75,8 +78,11 @@ func (c *gameServiceClient) ListGames(ctx context.Context, in *ListGamesRequest,
 // All implementations must embed UnimplementedGameServiceServer
 // for forward compatibility.
 type GameServiceServer interface {
+	// 試合状況を保存
 	SaveGame(context.Context, *SaveGameRequest) (*SaveGameResponse, error)
+	// 試合状況を削除
 	DeleteGame(context.Context, *DeleteGameRequest) (*DeleteGameResponse, error)
+	// 保存されている試合一覧を取得
 	ListGames(context.Context, *ListGamesRequest) (*ListGamesResponse, error)
 	mustEmbedUnimplementedGameServiceServer()
 }
@@ -176,7 +182,7 @@ func _GameService_ListGames_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var GameService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "pb.GameService",
+	ServiceName: "game.GameService",
 	HandlerType: (*GameServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

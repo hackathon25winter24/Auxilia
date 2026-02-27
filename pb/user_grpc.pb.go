@@ -33,12 +33,12 @@ const (
 type UserServiceClient interface {
 	// ID(UUID文字列)で検索
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
-	// 名前で検索（追加）
+	// 名前で検索
 	GetUserByName(ctx context.Context, in *NameRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	// ユーザー作成
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
-	// ユーザー情報の更新（追加）
-	UpdateUser(ctx context.Context, in *UserResponse, opts ...grpc.CallOption) (*UserResponse, error)
+	// ユーザー情報の更新
+	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	// 全ユーザー取得
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	// Hashを使ってログインする
@@ -83,7 +83,7 @@ func (c *userServiceClient) CreateUser(ctx context.Context, in *CreateUserReques
 	return out, nil
 }
 
-func (c *userServiceClient) UpdateUser(ctx context.Context, in *UserResponse, opts ...grpc.CallOption) (*UserResponse, error) {
+func (c *userServiceClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserResponse)
 	err := c.cc.Invoke(ctx, UserService_UpdateUser_FullMethodName, in, out, cOpts...)
@@ -119,12 +119,12 @@ func (c *userServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 type UserServiceServer interface {
 	// ID(UUID文字列)で検索
 	GetUser(context.Context, *GetUserRequest) (*UserResponse, error)
-	// 名前で検索（追加）
+	// 名前で検索
 	GetUserByName(context.Context, *NameRequest) (*UserResponse, error)
 	// ユーザー作成
 	CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error)
-	// ユーザー情報の更新（追加）
-	UpdateUser(context.Context, *UserResponse) (*UserResponse, error)
+	// ユーザー情報の更新
+	UpdateUser(context.Context, *UpdateUserRequest) (*UserResponse, error)
 	// 全ユーザー取得
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	// Hashを使ってログインする
@@ -148,7 +148,7 @@ func (UnimplementedUserServiceServer) GetUserByName(context.Context, *NameReques
 func (UnimplementedUserServiceServer) CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
 }
-func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UserResponse) (*UserResponse, error) {
+func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UpdateUserRequest) (*UserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
 }
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
@@ -233,7 +233,7 @@ func _UserService_CreateUser_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _UserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UserResponse)
+	in := new(UpdateUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func _UserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: UserService_UpdateUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).UpdateUser(ctx, req.(*UserResponse))
+		return srv.(UserServiceServer).UpdateUser(ctx, req.(*UpdateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

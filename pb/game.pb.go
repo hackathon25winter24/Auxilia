@@ -21,145 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// 状態異常の情報
-type CharacterCondition struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ConditionId   uint32                 `protobuf:"varint,1,opt,name=condition_id,json=conditionId,proto3" json:"condition_id,omitempty"`
-	LastingTurn   uint32                 `protobuf:"varint,2,opt,name=lasting_turn,json=lastingTurn,proto3" json:"lasting_turn,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CharacterCondition) Reset() {
-	*x = CharacterCondition{}
-	mi := &file_game_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CharacterCondition) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CharacterCondition) ProtoMessage() {}
-
-func (x *CharacterCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CharacterCondition.ProtoReflect.Descriptor instead.
-func (*CharacterCondition) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *CharacterCondition) GetConditionId() uint32 {
-	if x != nil {
-		return x.ConditionId
-	}
-	return 0
-}
-
-func (x *CharacterCondition) GetLastingTurn() uint32 {
-	if x != nil {
-		return x.LastingTurn
-	}
-	return 0
-}
-
-// キャラクター個別の情報
-type UniqueCharacter struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CharacterId   uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
-	Hp            int32                  `protobuf:"varint,2,opt,name=hp,proto3" json:"hp,omitempty"`
-	X             int32                  `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
-	Y             int32                  `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
-	Is_1P         bool                   `protobuf:"varint,5,opt,name=is_1p,json=is1p,proto3" json:"is_1p,omitempty"`
-	Conditions    []*CharacterCondition  `protobuf:"bytes,6,rep,name=conditions,proto3" json:"conditions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UniqueCharacter) Reset() {
-	*x = UniqueCharacter{}
-	mi := &file_game_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UniqueCharacter) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UniqueCharacter) ProtoMessage() {}
-
-func (x *UniqueCharacter) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UniqueCharacter.ProtoReflect.Descriptor instead.
-func (*UniqueCharacter) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *UniqueCharacter) GetCharacterId() uint32 {
-	if x != nil {
-		return x.CharacterId
-	}
-	return 0
-}
-
-func (x *UniqueCharacter) GetHp() int32 {
-	if x != nil {
-		return x.Hp
-	}
-	return 0
-}
-
-func (x *UniqueCharacter) GetX() int32 {
-	if x != nil {
-		return x.X
-	}
-	return 0
-}
-
-func (x *UniqueCharacter) GetY() int32 {
-	if x != nil {
-		return x.Y
-	}
-	return 0
-}
-
-func (x *UniqueCharacter) GetIs_1P() bool {
-	if x != nil {
-		return x.Is_1P
-	}
-	return false
-}
-
-func (x *UniqueCharacter) GetConditions() []*CharacterCondition {
-	if x != nil {
-		return x.Conditions
-	}
-	return nil
-}
-
-// 試合保存のリクエスト
 type SaveGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        uint32                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
@@ -168,14 +29,14 @@ type SaveGameRequest struct {
 	BaseHp_1P     int32                  `protobuf:"varint,4,opt,name=base_hp_1p,json=baseHp1p,proto3" json:"base_hp_1p,omitempty"`
 	BaseHp_2P     int32                  `protobuf:"varint,5,opt,name=base_hp_2p,json=baseHp2p,proto3" json:"base_hp_2p,omitempty"`
 	Turn          uint32                 `protobuf:"varint,6,opt,name=turn,proto3" json:"turn,omitempty"`
-	Characters    []*UniqueCharacter     `protobuf:"bytes,7,rep,name=characters,proto3" json:"characters,omitempty"`
+	Characters    []*UniqueCharacter     `protobuf:"bytes,7,rep,name=characters,proto3" json:"characters,omitempty"` // リスト形式
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SaveGameRequest) Reset() {
 	*x = SaveGameRequest{}
-	mi := &file_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -187,7 +48,7 @@ func (x *SaveGameRequest) String() string {
 func (*SaveGameRequest) ProtoMessage() {}
 
 func (x *SaveGameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -200,7 +61,7 @@ func (x *SaveGameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveGameRequest.ProtoReflect.Descriptor instead.
 func (*SaveGameRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{2}
+	return file_game_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SaveGameRequest) GetRoomId() uint32 {
@@ -261,7 +122,7 @@ type SaveGameResponse struct {
 
 func (x *SaveGameResponse) Reset() {
 	*x = SaveGameResponse{}
-	mi := &file_game_proto_msgTypes[3]
+	mi := &file_game_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -273,7 +134,7 @@ func (x *SaveGameResponse) String() string {
 func (*SaveGameResponse) ProtoMessage() {}
 
 func (x *SaveGameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[3]
+	mi := &file_game_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -286,7 +147,7 @@ func (x *SaveGameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveGameResponse.ProtoReflect.Descriptor instead.
 func (*SaveGameResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{3}
+	return file_game_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SaveGameResponse) GetSuccess() bool {
@@ -296,7 +157,6 @@ func (x *SaveGameResponse) GetSuccess() bool {
 	return false
 }
 
-// 試合削除のリクエスト
 type DeleteGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        uint32                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
@@ -306,7 +166,7 @@ type DeleteGameRequest struct {
 
 func (x *DeleteGameRequest) Reset() {
 	*x = DeleteGameRequest{}
-	mi := &file_game_proto_msgTypes[4]
+	mi := &file_game_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +178,7 @@ func (x *DeleteGameRequest) String() string {
 func (*DeleteGameRequest) ProtoMessage() {}
 
 func (x *DeleteGameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[4]
+	mi := &file_game_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +191,7 @@ func (x *DeleteGameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGameRequest.ProtoReflect.Descriptor instead.
 func (*DeleteGameRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{4}
+	return file_game_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DeleteGameRequest) GetRoomId() uint32 {
@@ -350,7 +210,7 @@ type DeleteGameResponse struct {
 
 func (x *DeleteGameResponse) Reset() {
 	*x = DeleteGameResponse{}
-	mi := &file_game_proto_msgTypes[5]
+	mi := &file_game_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -362,7 +222,7 @@ func (x *DeleteGameResponse) String() string {
 func (*DeleteGameResponse) ProtoMessage() {}
 
 func (x *DeleteGameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[5]
+	mi := &file_game_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -375,7 +235,7 @@ func (x *DeleteGameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGameResponse.ProtoReflect.Descriptor instead.
 func (*DeleteGameResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{5}
+	return file_game_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DeleteGameResponse) GetSuccess() bool {
@@ -393,7 +253,7 @@ type ListGamesRequest struct {
 
 func (x *ListGamesRequest) Reset() {
 	*x = ListGamesRequest{}
-	mi := &file_game_proto_msgTypes[6]
+	mi := &file_game_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +265,7 @@ func (x *ListGamesRequest) String() string {
 func (*ListGamesRequest) ProtoMessage() {}
 
 func (x *ListGamesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[6]
+	mi := &file_game_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,19 +278,19 @@ func (x *ListGamesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGamesRequest.ProtoReflect.Descriptor instead.
 func (*ListGamesRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{6}
+	return file_game_proto_rawDescGZIP(), []int{4}
 }
 
 type ListGamesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Games         []*SaveGameRequest     `protobuf:"bytes,1,rep,name=games,proto3" json:"games,omitempty"`
+	Games         []*SaveGameRequest     `protobuf:"bytes,1,rep,name=games,proto3" json:"games,omitempty"` // SaveGameRequestを再利用
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListGamesResponse) Reset() {
 	*x = ListGamesResponse{}
-	mi := &file_game_proto_msgTypes[7]
+	mi := &file_game_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -442,7 +302,7 @@ func (x *ListGamesResponse) String() string {
 func (*ListGamesResponse) ProtoMessage() {}
 
 func (x *ListGamesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[7]
+	mi := &file_game_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +315,7 @@ func (x *ListGamesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGamesResponse.ProtoReflect.Descriptor instead.
 func (*ListGamesResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{7}
+	return file_game_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListGamesResponse) GetGames() []*SaveGameRequest {
@@ -465,24 +325,150 @@ func (x *ListGamesResponse) GetGames() []*SaveGameRequest {
 	return nil
 }
 
+// キャラクター情報
+type UniqueCharacter struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId   uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	Hp            int32                  `protobuf:"varint,2,opt,name=hp,proto3" json:"hp,omitempty"`
+	X             int32                  `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
+	Y             int32                  `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
+	Is_1P         bool                   `protobuf:"varint,5,opt,name=is_1p,json=is1p,proto3" json:"is_1p,omitempty"`
+	Conditions    []*CharacterCondition  `protobuf:"bytes,6,rep,name=conditions,proto3" json:"conditions,omitempty"` // 状態異常リスト
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UniqueCharacter) Reset() {
+	*x = UniqueCharacter{}
+	mi := &file_game_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UniqueCharacter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UniqueCharacter) ProtoMessage() {}
+
+func (x *UniqueCharacter) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UniqueCharacter.ProtoReflect.Descriptor instead.
+func (*UniqueCharacter) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UniqueCharacter) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *UniqueCharacter) GetHp() int32 {
+	if x != nil {
+		return x.Hp
+	}
+	return 0
+}
+
+func (x *UniqueCharacter) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *UniqueCharacter) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *UniqueCharacter) GetIs_1P() bool {
+	if x != nil {
+		return x.Is_1P
+	}
+	return false
+}
+
+func (x *UniqueCharacter) GetConditions() []*CharacterCondition {
+	if x != nil {
+		return x.Conditions
+	}
+	return nil
+}
+
+// 状態異常情報
+type CharacterCondition struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ConditionId   uint32                 `protobuf:"varint,1,opt,name=condition_id,json=conditionId,proto3" json:"condition_id,omitempty"`
+	LastingTurn   uint32                 `protobuf:"varint,2,opt,name=lasting_turn,json=lastingTurn,proto3" json:"lasting_turn,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CharacterCondition) Reset() {
+	*x = CharacterCondition{}
+	mi := &file_game_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CharacterCondition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CharacterCondition) ProtoMessage() {}
+
+func (x *CharacterCondition) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CharacterCondition.ProtoReflect.Descriptor instead.
+func (*CharacterCondition) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CharacterCondition) GetConditionId() uint32 {
+	if x != nil {
+		return x.ConditionId
+	}
+	return 0
+}
+
+func (x *CharacterCondition) GetLastingTurn() uint32 {
+	if x != nil {
+		return x.LastingTurn
+	}
+	return 0
+}
+
 var File_game_proto protoreflect.FileDescriptor
 
 const file_game_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"game.proto\x12\x02pb\"Z\n" +
-	"\x12CharacterCondition\x12!\n" +
-	"\fcondition_id\x18\x01 \x01(\rR\vconditionId\x12!\n" +
-	"\flasting_turn\x18\x02 \x01(\rR\vlastingTurn\"\xad\x01\n" +
-	"\x0fUniqueCharacter\x12!\n" +
-	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x0e\n" +
-	"\x02hp\x18\x02 \x01(\x05R\x02hp\x12\f\n" +
-	"\x01x\x18\x03 \x01(\x05R\x01x\x12\f\n" +
-	"\x01y\x18\x04 \x01(\x05R\x01y\x12\x13\n" +
-	"\x05is_1p\x18\x05 \x01(\bR\x04is1p\x126\n" +
-	"\n" +
-	"conditions\x18\x06 \x03(\v2\x16.pb.CharacterConditionR\n" +
-	"conditions\"\xf3\x01\n" +
+	"game.proto\x12\x04game\"\xf5\x01\n" +
 	"\x0fSaveGameRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12 \n" +
 	"\fplayer_1p_id\x18\x02 \x01(\tR\n" +
@@ -493,9 +479,9 @@ const file_game_proto_rawDesc = "" +
 	"base_hp_1p\x18\x04 \x01(\x05R\bbaseHp1p\x12\x1c\n" +
 	"\n" +
 	"base_hp_2p\x18\x05 \x01(\x05R\bbaseHp2p\x12\x12\n" +
-	"\x04turn\x18\x06 \x01(\rR\x04turn\x123\n" +
+	"\x04turn\x18\x06 \x01(\rR\x04turn\x125\n" +
 	"\n" +
-	"characters\x18\a \x03(\v2\x13.pb.UniqueCharacterR\n" +
+	"characters\x18\a \x03(\v2\x15.game.UniqueCharacterR\n" +
 	"characters\",\n" +
 	"\x10SaveGameResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\",\n" +
@@ -503,15 +489,27 @@ const file_game_proto_rawDesc = "" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\".\n" +
 	"\x12DeleteGameResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x12\n" +
-	"\x10ListGamesRequest\">\n" +
-	"\x11ListGamesResponse\x12)\n" +
-	"\x05games\x18\x01 \x03(\v2\x13.pb.SaveGameRequestR\x05games2\xbb\x01\n" +
-	"\vGameService\x125\n" +
-	"\bSaveGame\x12\x13.pb.SaveGameRequest\x1a\x14.pb.SaveGameResponse\x12;\n" +
+	"\x10ListGamesRequest\"@\n" +
+	"\x11ListGamesResponse\x12+\n" +
+	"\x05games\x18\x01 \x03(\v2\x15.game.SaveGameRequestR\x05games\"\xaf\x01\n" +
+	"\x0fUniqueCharacter\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x0e\n" +
+	"\x02hp\x18\x02 \x01(\x05R\x02hp\x12\f\n" +
+	"\x01x\x18\x03 \x01(\x05R\x01x\x12\f\n" +
+	"\x01y\x18\x04 \x01(\x05R\x01y\x12\x13\n" +
+	"\x05is_1p\x18\x05 \x01(\bR\x04is1p\x128\n" +
 	"\n" +
-	"DeleteGame\x12\x15.pb.DeleteGameRequest\x1a\x16.pb.DeleteGameResponse\x128\n" +
-	"\tListGames\x12\x14.pb.ListGamesRequest\x1a\x15.pb.ListGamesResponseB\fZ\n" +
-	"auxilia/pbb\x06proto3"
+	"conditions\x18\x06 \x03(\v2\x18.game.CharacterConditionR\n" +
+	"conditions\"Z\n" +
+	"\x12CharacterCondition\x12!\n" +
+	"\fcondition_id\x18\x01 \x01(\rR\vconditionId\x12!\n" +
+	"\flasting_turn\x18\x02 \x01(\rR\vlastingTurn2\xc7\x01\n" +
+	"\vGameService\x129\n" +
+	"\bSaveGame\x12\x15.game.SaveGameRequest\x1a\x16.game.SaveGameResponse\x12?\n" +
+	"\n" +
+	"DeleteGame\x12\x17.game.DeleteGameRequest\x1a\x18.game.DeleteGameResponse\x12<\n" +
+	"\tListGames\x12\x16.game.ListGamesRequest\x1a\x17.game.ListGamesResponseB\x1bZ\n" +
+	"auxilia/pb\xaa\x02\fGame.Networkb\x06proto3"
 
 var (
 	file_game_proto_rawDescOnce sync.Once
@@ -527,25 +525,25 @@ func file_game_proto_rawDescGZIP() []byte {
 
 var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_game_proto_goTypes = []any{
-	(*CharacterCondition)(nil), // 0: pb.CharacterCondition
-	(*UniqueCharacter)(nil),    // 1: pb.UniqueCharacter
-	(*SaveGameRequest)(nil),    // 2: pb.SaveGameRequest
-	(*SaveGameResponse)(nil),   // 3: pb.SaveGameResponse
-	(*DeleteGameRequest)(nil),  // 4: pb.DeleteGameRequest
-	(*DeleteGameResponse)(nil), // 5: pb.DeleteGameResponse
-	(*ListGamesRequest)(nil),   // 6: pb.ListGamesRequest
-	(*ListGamesResponse)(nil),  // 7: pb.ListGamesResponse
+	(*SaveGameRequest)(nil),    // 0: game.SaveGameRequest
+	(*SaveGameResponse)(nil),   // 1: game.SaveGameResponse
+	(*DeleteGameRequest)(nil),  // 2: game.DeleteGameRequest
+	(*DeleteGameResponse)(nil), // 3: game.DeleteGameResponse
+	(*ListGamesRequest)(nil),   // 4: game.ListGamesRequest
+	(*ListGamesResponse)(nil),  // 5: game.ListGamesResponse
+	(*UniqueCharacter)(nil),    // 6: game.UniqueCharacter
+	(*CharacterCondition)(nil), // 7: game.CharacterCondition
 }
 var file_game_proto_depIdxs = []int32{
-	0, // 0: pb.UniqueCharacter.conditions:type_name -> pb.CharacterCondition
-	1, // 1: pb.SaveGameRequest.characters:type_name -> pb.UniqueCharacter
-	2, // 2: pb.ListGamesResponse.games:type_name -> pb.SaveGameRequest
-	2, // 3: pb.GameService.SaveGame:input_type -> pb.SaveGameRequest
-	4, // 4: pb.GameService.DeleteGame:input_type -> pb.DeleteGameRequest
-	6, // 5: pb.GameService.ListGames:input_type -> pb.ListGamesRequest
-	3, // 6: pb.GameService.SaveGame:output_type -> pb.SaveGameResponse
-	5, // 7: pb.GameService.DeleteGame:output_type -> pb.DeleteGameResponse
-	7, // 8: pb.GameService.ListGames:output_type -> pb.ListGamesResponse
+	6, // 0: game.SaveGameRequest.characters:type_name -> game.UniqueCharacter
+	0, // 1: game.ListGamesResponse.games:type_name -> game.SaveGameRequest
+	7, // 2: game.UniqueCharacter.conditions:type_name -> game.CharacterCondition
+	0, // 3: game.GameService.SaveGame:input_type -> game.SaveGameRequest
+	2, // 4: game.GameService.DeleteGame:input_type -> game.DeleteGameRequest
+	4, // 5: game.GameService.ListGames:input_type -> game.ListGamesRequest
+	1, // 6: game.GameService.SaveGame:output_type -> game.SaveGameResponse
+	3, // 7: game.GameService.DeleteGame:output_type -> game.DeleteGameResponse
+	5, // 8: game.GameService.ListGames:output_type -> game.ListGamesResponse
 	6, // [6:9] is the sub-list for method output_type
 	3, // [3:6] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

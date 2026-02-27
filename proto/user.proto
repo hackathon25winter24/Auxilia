@@ -9,14 +9,14 @@ service UserService {
   // ID(UUID文字列)で検索
   rpc GetUser (GetUserRequest) returns (UserResponse);
   
-  // 名前で検索（追加）
+  // 名前で検索
   rpc GetUserByName (NameRequest) returns (UserResponse);
   
   // ユーザー作成
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
   
-  // ユーザー情報の更新（追加）
-  rpc UpdateUser (UserResponse) returns (UserResponse);
+  // ユーザー情報の更新
+  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
   
   // 全ユーザー取得
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
@@ -42,7 +42,7 @@ message NameRequest {
 }
 
 message GetUserRequest {
-  string id = 1; 
+  string id = 1; // UUID
 }
 
 message CreateUserRequest {
@@ -50,6 +50,15 @@ message CreateUserRequest {
   string hash = 2;
   int32 story = 3;
   int32 rate = 4;
+}
+
+// 更新用：IDで対象を指定し、その他の値を書き換える
+message UpdateUserRequest {
+  string id = 1;
+  string name = 2;
+  string hash = 3;
+  int32 story = 4;
+  int32 rate = 5;
 }
 
 message UserResponse {

@@ -83,7 +83,7 @@ func (h *UserHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.User
 }
 
 // UpdateUser: ユーザー情報の更新 (必要に応じてサービスに追加してください)
-func (h *UserHandler) UpdateUser(ctx context.Context, req *pb.UserResponse) (*pb.UserResponse, error) {
+func (h *UserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UserResponse, error) {
 	uid, err := uuid.Parse(req.Id)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid uuid format")
