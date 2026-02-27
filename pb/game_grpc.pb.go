@@ -20,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	GameService_SaveGame_FullMethodName   = "/game.GameService/SaveGame"
+	GameService_GetGame_FullMethodName    = "/game.GameService/GetGame"
+	GameService_UpdateGame_FullMethodName = "/game.GameService/UpdateGame"
 	GameService_DeleteGame_FullMethodName = "/game.GameService/DeleteGame"
 	GameService_ListGames_FullMethodName  = "/game.GameService/ListGames"
 )
@@ -28,11 +30,10 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GameServiceClient interface {
-	// 試合状況を保存
-	SaveGame(ctx context.Context, in *SaveGameRequest, opts ...grpc.CallOption) (*SaveGameResponse, error)
-	// 試合状況を削除
+	SaveGame(ctx context.Context, in *SaveGameRequest, opts ...grpc.CallOption) (*GameResponse, error)
+	GetGame(ctx context.Context, in *GetGameRequest, opts ...grpc.CallOption) (*GameResponse, error)
+	UpdateGame(ctx context.Context, in *UpdateGameRequest, opts ...grpc.CallOption) (*GameResponse, error)
 	DeleteGame(ctx context.Context, in *DeleteGameRequest, opts ...grpc.CallOption) (*DeleteGameResponse, error)
-	// 保存されている試合一覧を取得
 	ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (*ListGamesResponse, error)
 }
 
@@ -44,10 +45,30 @@ func NewGameServiceClient(cc grpc.ClientConnInterface) GameServiceClient {
 	return &gameServiceClient{cc}
 }
 
-func (c *gameServiceClient) SaveGame(ctx context.Context, in *SaveGameRequest, opts ...grpc.CallOption) (*SaveGameResponse, error) {
+func (c *gameServiceClient) SaveGame(ctx context.Context, in *SaveGameRequest, opts ...grpc.CallOption) (*GameResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SaveGameResponse)
+	out := new(GameResponse)
 	err := c.cc.Invoke(ctx, GameService_SaveGame_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gameServiceClient) GetGame(ctx context.Context, in *GetGameRequest, opts ...grpc.CallOption) (*GameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GameResponse)
+	err := c.cc.Invoke(ctx, GameService_GetGame_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gameServiceClient) UpdateGame(ctx context.Context, in *UpdateGameRequest, opts ...grpc.CallOption) (*GameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GameResponse)
+	err := c.cc.Invoke(ctx, GameService_UpdateGame_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +99,10 @@ func (c *gameServiceClient) ListGames(ctx context.Context, in *ListGamesRequest,
 // All implementations must embed UnimplementedGameServiceServer
 // for forward compatibility.
 type GameServiceServer interface {
-	// 試合状況を保存
-	SaveGame(context.Context, *SaveGameRequest) (*SaveGameResponse, error)
-	// 試合状況を削除
+	SaveGame(context.Context, *SaveGameRequest) (*GameResponse, error)
+	GetGame(context.Context, *GetGameRequest) (*GameResponse, error)
+	UpdateGame(context.Context, *UpdateGameRequest) (*GameResponse, error)
 	DeleteGame(context.Context, *DeleteGameRequest) (*DeleteGameResponse, error)
-	// 保存されている試合一覧を取得
 	ListGames(context.Context, *ListGamesRequest) (*ListGamesResponse, error)
 	mustEmbedUnimplementedGameServiceServer()
 }
@@ -94,8 +114,14 @@ type GameServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGameServiceServer struct{}
 
-func (UnimplementedGameServiceServer) SaveGame(context.Context, *SaveGameRequest) (*SaveGameResponse, error) {
+func (UnimplementedGameServiceServer) SaveGame(context.Context, *SaveGameRequest) (*GameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveGame not implemented")
+}
+func (UnimplementedGameServiceServer) GetGame(context.Context, *GetGameRequest) (*GameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGame not implemented")
+}
+func (UnimplementedGameServiceServer) UpdateGame(context.Context, *UpdateGameRequest) (*GameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateGame not implemented")
 }
 func (UnimplementedGameServiceServer) DeleteGame(context.Context, *DeleteGameRequest) (*DeleteGameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteGame not implemented")
@@ -138,6 +164,42 @@ func _GameService_SaveGame_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GameServiceServer).SaveGame(ctx, req.(*SaveGameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GameService_GetGame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GameServiceServer).GetGame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GameService_GetGame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GameServiceServer).GetGame(ctx, req.(*GetGameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GameService_UpdateGame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GameServiceServer).UpdateGame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GameService_UpdateGame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GameServiceServer).UpdateGame(ctx, req.(*UpdateGameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -188,6 +250,14 @@ var GameService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveGame",
 			Handler:    _GameService_SaveGame_Handler,
+		},
+		{
+			MethodName: "GetGame",
+			Handler:    _GameService_GetGame_Handler,
+		},
+		{
+			MethodName: "UpdateGame",
+			Handler:    _GameService_UpdateGame_Handler,
 		},
 		{
 			MethodName: "DeleteGame",

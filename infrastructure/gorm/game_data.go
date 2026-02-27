@@ -1,9 +1,10 @@
 package gorm
 
 import (
-	"context"
-	"auxilia/domain/interface"
+	repository "auxilia/domain/interface"
 	"auxilia/domain/model"
+	"context"
+
 	"gorm.io/gorm"
 )
 
@@ -63,8 +64,8 @@ func (r *GameRepository) ListGames(ctx context.Context) ([]model.GameData, error
 		Find(&games).Error
 	return games, err
 }
-// GetGame retrieves a single game record by room ID, including related characters and conditions.
-func (r *GameRepository) GetGame(ctx context.Context, roomID uint) (*model.GameData, error) {
+// GetByRoomID retrieves a single game record by room ID, including related characters and conditions.
+func (r *GameRepository) GetByRoomID(ctx context.Context, roomID uint) (*model.GameData, error) {
     var game model.GameData
     err := r.db.WithContext(ctx).
         Preload("Characters.Conditions").
@@ -74,4 +75,12 @@ func (r *GameRepository) GetGame(ctx context.Context, roomID uint) (*model.GameD
         return nil, err
     }
     return &game, nil
+}
+
+// UpdateGame updates an existing record; this implementation simply
+// reuses SaveGame which deletes then recreates the row to ensure
+// related tables stay in sync.
+func (r *GameRepository) UpdateGame(ctx context.Context, game *model.GameData) error {
+    // delegate to SaveGame, which already handles upsert semantics
+    return r.SaveGame(ctx, game)
 }
