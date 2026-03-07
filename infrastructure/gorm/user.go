@@ -62,3 +62,7 @@ func (r *UserRepository) Update(ctx context.Context, user *model.User) error {
 	// GORMのSaveメソッドはIDがあればUpdate、なければCreateとして機能します
 	return r.db.WithContext(ctx).Save(user).Error
 }
+
+func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&model.User{}, "id = ?", id).Error
+}

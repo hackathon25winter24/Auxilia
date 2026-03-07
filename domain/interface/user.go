@@ -13,4 +13,5 @@ type UserRepository interface {
 	FindByHash(ctx context.Context, hash string) (*model.User, error) // ログイン用
 	FindAll(ctx context.Context) ([]model.User, error)               // 一覧用
 	Update(ctx context.Context, user *model.User) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }

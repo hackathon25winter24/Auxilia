@@ -23,6 +23,8 @@ service UserService {
   
   // Hashを使ってログインする
   rpc Login(LoginRequest) returns (UserResponse);
+
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
 // --- メッセージ定義 ---
@@ -67,4 +69,12 @@ message UserResponse {
   string hash = 3;
   int32 story = 4;
   int32 rate = 5;
+}
+
+message DeleteUserRequest {
+  string id = 1;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
 }

@@ -131,3 +131,16 @@ func (h *UserHandler) toPBResponse(u *model.User) *pb.UserResponse {
 		Rate:  int32(u.Rate),
 	}
 }
+
+func (h *UserHandler) DeleteUser(ctx context.Context,req *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
+	uid,err := uuid.Parse(req.Id)
+	if err != nil {
+        return nil, status.Error(codes.InvalidArgument, "invalid uuid format")
+    }
+
+    if err := h.repo.Delete(ctx, uid); err != nil {
+        return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+    }
+
+    return &pb.DeleteUserResponse{Success: true}, nil
+}
