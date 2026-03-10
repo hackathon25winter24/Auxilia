@@ -26,30 +26,34 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 
 // CreateUser: 新規ユーザー作成
 func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.UserResponse, error) {
-    // 1. 生パスワードをハッシュ化する
-    // 第2引数の Cost はデフォルト（10）で十分安全です
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-    if err != nil {
-        return nil, status.Error(codes.Internal, "failed to hash password")
-    }
+  if len(req.Password) < 6 {
+    return nil, status.Error(codes.InvalidArgument, "too short password")
+	}
+	// 1. 生パスワードをハッシュ化する
+	// 第2引数の Cost はデフォルト（10）で十分安全です
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+			return nil, status.Error(codes.Internal, "failed to hash password")
+	}
 
-    // 2. モデルの作成
-    // これまで「Hash」と呼んでいたフィールドに、ハッシュ化したパスワードを入れます
-    newUser := &model.User{
-        ID:   uuid.New(),
-        Name: req.Name,
-        Hash: string(hashedPassword), // ここが重要！
-        Story: 1,
-				NumWins: 0,
-				NumBattles: 0,
-    }
 
-    // 3. リポジトリ経由でDB保存
-    if err := h.repo.Create(ctx, newUser); err != nil {
-        return nil, status.Error(codes.Internal, "failed to create user")
-    }
+	// 2. モデルの作成
+	// これまで「Hash」と呼んでいたフィールドに、ハッシュ化したパスワードを入れます
+	newUser := &model.User{
+			ID:   uuid.New(),
+			Name: req.Name,
+			Hash: string(hashedPassword), // ここが重要！
+			Story: 1,
+			NumWins: 0,
+			NumBattles: 0,
+	}
 
-    return h.toPBResponse(newUser), nil
+	// 3. リポジトリ経由でDB保存
+	if err := h.repo.Create(ctx, newUser); err != nil {
+			return nil, status.Error(codes.AlreadyExists, "user name already exists")
+	}
+
+	return h.toPBResponse(newUser), nil
 }
 
 // GetUser: IDでユーザー取得
@@ -84,14 +88,13 @@ func (h *UserHandler) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (
 }
 
 func (h *UserHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.UserResponse, error) {
-    // 1. 文字列の req.Id を uuid.UUID に変換する
-    userID, err := uuid.Parse(req.Id)
-    if err != nil {
-        return nil, status.Error(codes.InvalidArgument, "invalid user id format")
+    userName := req.Name
+    if userName == "" {
+        return nil, status.Error(codes.InvalidArgument, "invalid user name format")
     }
 
     // 2. 変換した userID を使って検索
-    user, err := h.repo.FindByID(ctx, userID)
+    user, err := h.repo.FindByName(ctx, userName)
     if err != nil {
         return nil, status.Error(codes.NotFound, "user not found")
     }

@@ -8,7 +8,7 @@ import (
 type User struct {
 		// MariaDBには専用のUUID型がないため、VARCHAR(36)として保存します
     ID    uuid.UUID `gorm:"type:char(36);primaryKey" json:"id"`
-    Name string    `json:"name"`
+    Name string    `gorm:"unique" ;json:"name"`
     Hash  string    `json:"hash"`
     Story int       `json:"story"`
     NumWins int       `json:"num_wins"`

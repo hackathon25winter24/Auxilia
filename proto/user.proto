@@ -36,7 +36,7 @@ message ListUsersResponse {
 }
 
 message LoginRequest {
-  string id = 1;
+  string name = 1;
   string password =2;
 }
 
