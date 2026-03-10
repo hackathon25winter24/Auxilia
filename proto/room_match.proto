@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package roommatch;
 
-option go_package = "auxilia/pb";
+option go_package = "./pb";
 
 service RoomMatchService {
     // マッチング部屋作成
