@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package roommatch;
+
+option go_package = "auxilia/pb";
+
+service RoomMatchService {
+    // マッチング部屋作成
+    rpc CreateRoomMatch (CreateRoomMatchRequest) returns (CreateRoomMatchResponse);
+}
+
+// Unityからは部屋名、オーナー名、プライベートかどうかが送られる
+message CreateRoomMatchRequest {
+    string name = 1;
+    string owner = 2;
+    bool is_private = 3;
+}
+
+// サーバーは作成された部屋のIDを返す
+message CreateRoomMatchResponse {
+    int32 room_id = 1;
+}
