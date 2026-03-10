@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package game;
+
+option go_package = "auxilia/pb";
+option csharp_namespace = "Game.Network";
+
+service GameService {
+  rpc SaveGame (SaveGameRequest) returns (GameResponse);
+  rpc GetGame (GetGameRequest) returns (GameResponse);
+  rpc UpdateGame (UpdateGameRequest) returns (GameResponse);
+  rpc DeleteGame (DeleteGameRequest) returns (DeleteGameResponse);
+  rpc ListGames (ListGamesRequest) returns (ListGamesResponse);
+}
+
+//
+// ===== Core Entity =====
+//
+
+message Game {
+  uint32 room_id = 1;
+  string player_1p_id = 2;
+  string player_2p_id = 3;
+  int32 base_hp_1p = 4;
+  int32 base_hp_2p = 5;
+  uint32 turn = 6;
+  repeated UniqueCharacter characters = 7;
+}
+
+//
+// ===== Requests =====
+//
+
+message SaveGameRequest {
+  Game game = 1;
+}
+
+message UpdateGameRequest {
+  Game game = 1;
+}
+
+message GetGameRequest {
+  uint32 room_id = 1;
+}
+
+message DeleteGameRequest {
+  uint32 room_id = 1;
+}
+
+message ListGamesRequest {}
+
+//
+// ===== Responses =====
+//
+
+message GameResponse {
+  bool success = 1;
+  Game game = 2;
+}
+
+message DeleteGameResponse {
+  bool success = 1;
+}
+
+message ListGamesResponse {
+  repeated Game games = 1;
+}
+
+//
+// ===== Character =====
+//
+
+message UniqueCharacter {
+  uint32 character_id = 1;
+  int32 hp = 2;
+  int32 x = 3;
+  int32 y = 4;
+  bool is_1p = 5;
+  repeated CharacterCondition conditions = 6;
+}
+
+message CharacterCondition {
+  uint32 condition_id = 1;
+  uint32 lasting_turn = 2;
+}
