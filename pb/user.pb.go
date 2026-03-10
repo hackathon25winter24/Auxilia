@@ -298,7 +298,7 @@ type UpdateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Hash          string                 `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
+	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
 	Story         int32                  `protobuf:"varint,4,opt,name=story,proto3" json:"story,omitempty"`
 	NumWins       int32                  `protobuf:"varint,5,opt,name=numWins,proto3" json:"numWins,omitempty"`
 	NumBattles    int32                  `protobuf:"varint,6,opt,name=numBattles,proto3" json:"numBattles,omitempty"`
@@ -350,9 +350,9 @@ func (x *UpdateUserRequest) GetName() string {
 	return ""
 }
 
-func (x *UpdateUserRequest) GetHash() string {
+func (x *UpdateUserRequest) GetPassword() string {
 	if x != nil {
-		return x.Hash
+		return x.Password
 	}
 	return ""
 }
@@ -382,10 +382,9 @@ type UserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Hash          string                 `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
-	Story         int32                  `protobuf:"varint,4,opt,name=story,proto3" json:"story,omitempty"`
-	NumWins       int32                  `protobuf:"varint,5,opt,name=numWins,proto3" json:"numWins,omitempty"`
-	NumBattles    int32                  `protobuf:"varint,6,opt,name=numBattles,proto3" json:"numBattles,omitempty"`
+	Story         int32                  `protobuf:"varint,3,opt,name=story,proto3" json:"story,omitempty"`
+	NumWins       int32                  `protobuf:"varint,4,opt,name=numWins,proto3" json:"numWins,omitempty"`
+	NumBattles    int32                  `protobuf:"varint,5,opt,name=numBattles,proto3" json:"numBattles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -430,13 +429,6 @@ func (x *UserResponse) GetId() string {
 func (x *UserResponse) GetName() string {
 	if x != nil {
 		return x.Name
-	}
-	return ""
-}
-
-func (x *UserResponse) GetHash() string {
-	if x != nil {
-		return x.Hash
 	}
 	return ""
 }
@@ -568,24 +560,23 @@ const file_user_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"C\n" +
 	"\x11CreateUserRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x9b\x01\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xa3\x01\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04hash\x18\x03 \x01(\tR\x04hash\x12\x14\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x14\n" +
 	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x18\n" +
 	"\anumWins\x18\x05 \x01(\x05R\anumWins\x12\x1e\n" +
 	"\n" +
 	"numBattles\x18\x06 \x01(\x05R\n" +
-	"numBattles\"\x96\x01\n" +
+	"numBattles\"\x82\x01\n" +
 	"\fUserResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04hash\x18\x03 \x01(\tR\x04hash\x12\x14\n" +
-	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x18\n" +
-	"\anumWins\x18\x05 \x01(\x05R\anumWins\x12\x1e\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05story\x18\x03 \x01(\x05R\x05story\x12\x18\n" +
+	"\anumWins\x18\x04 \x01(\x05R\anumWins\x12\x1e\n" +
 	"\n" +
-	"numBattles\x18\x06 \x01(\x05R\n" +
+	"numBattles\x18\x05 \x01(\x05R\n" +
 	"numBattles\"#\n" +
 	"\x11DeleteUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\".\n" +
