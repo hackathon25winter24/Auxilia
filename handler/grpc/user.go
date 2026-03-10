@@ -2,7 +2,6 @@ package handlergrpc
 
 import (
 	"context"
-	"log"
 
 	"auxilia/domain/model"
 	"auxilia/domain/interface"
@@ -11,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
@@ -26,19 +26,30 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 
 // CreateUser: 新規ユーザー作成
 func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.UserResponse, error) {
-	user := &model.User{
-		Name:  req.Name,
-		Hash:  req.Hash,
-		Story: int(req.Story),
-		Rate:  int(req.Rate),
-	}
+    // 1. 生パスワードをハッシュ化する
+    // 第2引数の Cost はデフォルト（10）で十分安全です
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    if err != nil {
+        return nil, status.Error(codes.Internal, "failed to hash password")
+    }
 
-	if err := h.repo.Create(ctx, user); err != nil {
-		log.Printf("Failed to create user: %v", err)
-		return nil, status.Errorf(codes.Internal, "failed to create user")
-	}
+    // 2. モデルの作成
+    // これまで「Hash」と呼んでいたフィールドに、ハッシュ化したパスワードを入れます
+    newUser := &model.User{
+        ID:   uuid.New(),
+        Name: req.Name,
+        Hash: string(hashedPassword), // ここが重要！
+        Story: 1,
+				NumWins: 0,
+				NumBattles: 0,
+    }
 
-	return h.toPBResponse(user), nil
+    // 3. リポジトリ経由でDB保存
+    if err := h.repo.Create(ctx, newUser); err != nil {
+        return nil, status.Error(codes.Internal, "failed to create user")
+    }
+
+    return h.toPBResponse(newUser), nil
 }
 
 // GetUser: IDでユーザー取得
@@ -72,14 +83,26 @@ func (h *UserHandler) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (
 	return &pb.ListUsersResponse{Users: pbUsers}, nil
 }
 
-// Login: Hash一致でユーザー取得
 func (h *UserHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.UserResponse, error) {
-	user, err := h.repo.FindByHash(ctx, req.Hash)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, "invalid hash or user not found")
-	}
+    // 1. 文字列の req.Id を uuid.UUID に変換する
+    userID, err := uuid.Parse(req.Id)
+    if err != nil {
+        return nil, status.Error(codes.InvalidArgument, "invalid user id format")
+    }
 
-	return h.toPBResponse(user), nil
+    // 2. 変換した userID を使って検索
+    user, err := h.repo.FindByID(ctx, userID)
+    if err != nil {
+        return nil, status.Error(codes.NotFound, "user not found")
+    }
+
+    // 3. パスワード（Hashフィールド）の照合
+    err = bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(req.Password))
+    if err != nil {
+        return nil, status.Error(codes.Unauthenticated, "invalid password")
+    }
+
+    return h.toPBResponse(user), nil
 }
 
 // UpdateUser: ユーザー情報の更新 (必要に応じてサービスに追加してください)
@@ -99,7 +122,8 @@ func (h *UserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest)
 	user.Name = req.Name
 	user.Hash = req.Hash
 	user.Story = int(req.Story)
-	user.Rate = int(req.Rate)
+	user.NumWins = int(req.NumWins)
+	user.NumBattles = int(req.NumBattles)
 
 	// 3. DBに保存
 	if err := h.repo.Update(ctx, user); err != nil {
@@ -128,7 +152,8 @@ func (h *UserHandler) toPBResponse(u *model.User) *pb.UserResponse {
 		Name:  u.Name,
 		Hash:  u.Hash,
 		Story: int32(u.Story),
-		Rate:  int32(u.Rate),
+		NumWins: int32(u.NumWins),
+		NumBattles: int32(u.NumBattles),
 	}
 }
 

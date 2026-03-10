@@ -11,7 +11,8 @@ type User struct {
     Name string    `json:"name"`
     Hash  string    `json:"hash"`
     Story int       `json:"story"`
-    Rate  int       `json:"rate"`
+    NumWins int       `json:"num_wins"`
+    NumBattles int     `json:"num_battles"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {

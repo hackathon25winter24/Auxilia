@@ -36,7 +36,8 @@ message ListUsersResponse {
 }
 
 message LoginRequest {
-  string hash = 1;
+  string id = 1;
+  string password =2;
 }
 
 message NameRequest {
@@ -49,9 +50,7 @@ message GetUserRequest {
 
 message CreateUserRequest {
   string name = 1;
-  string hash = 2;
-  int32 story = 3;
-  int32 rate = 4;
+  string password = 2;
 }
 
 // 更新用：IDで対象を指定し、その他の値を書き換える
@@ -60,7 +59,8 @@ message UpdateUserRequest {
   string name = 2;
   string hash = 3;
   int32 story = 4;
-  int32 rate = 5;
+  int32 numWins = 5;
+  int32 numBattles = 6;
 }
 
 message UserResponse {
@@ -68,7 +68,8 @@ message UserResponse {
   string name = 2;
   string hash = 3;
   int32 story = 4;
-  int32 rate = 5;
+  int32 numWins = 5;
+  int32 numBattles = 6;
 }
 
 message DeleteUserRequest {

@@ -103,7 +103,8 @@ func (x *ListUsersResponse) GetUsers() []*UserResponse {
 
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Hash          string                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -138,9 +139,16 @@ func (*LoginRequest) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *LoginRequest) GetHash() string {
+func (x *LoginRequest) GetId() string {
 	if x != nil {
-		return x.Hash
+		return x.Id
+	}
+	return ""
+}
+
+func (x *LoginRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
 	}
 	return ""
 }
@@ -236,9 +244,7 @@ func (x *GetUserRequest) GetId() string {
 type CreateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Hash          string                 `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
-	Story         int32                  `protobuf:"varint,3,opt,name=story,proto3" json:"story,omitempty"`
-	Rate          int32                  `protobuf:"varint,4,opt,name=rate,proto3" json:"rate,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -280,25 +286,11 @@ func (x *CreateUserRequest) GetName() string {
 	return ""
 }
 
-func (x *CreateUserRequest) GetHash() string {
+func (x *CreateUserRequest) GetPassword() string {
 	if x != nil {
-		return x.Hash
+		return x.Password
 	}
 	return ""
-}
-
-func (x *CreateUserRequest) GetStory() int32 {
-	if x != nil {
-		return x.Story
-	}
-	return 0
-}
-
-func (x *CreateUserRequest) GetRate() int32 {
-	if x != nil {
-		return x.Rate
-	}
-	return 0
 }
 
 // 更新用：IDで対象を指定し、その他の値を書き換える
@@ -308,7 +300,8 @@ type UpdateUserRequest struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Hash          string                 `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
 	Story         int32                  `protobuf:"varint,4,opt,name=story,proto3" json:"story,omitempty"`
-	Rate          int32                  `protobuf:"varint,5,opt,name=rate,proto3" json:"rate,omitempty"`
+	NumWins       int32                  `protobuf:"varint,5,opt,name=numWins,proto3" json:"numWins,omitempty"`
+	NumBattles    int32                  `protobuf:"varint,6,opt,name=numBattles,proto3" json:"numBattles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -371,9 +364,16 @@ func (x *UpdateUserRequest) GetStory() int32 {
 	return 0
 }
 
-func (x *UpdateUserRequest) GetRate() int32 {
+func (x *UpdateUserRequest) GetNumWins() int32 {
 	if x != nil {
-		return x.Rate
+		return x.NumWins
+	}
+	return 0
+}
+
+func (x *UpdateUserRequest) GetNumBattles() int32 {
+	if x != nil {
+		return x.NumBattles
 	}
 	return 0
 }
@@ -384,7 +384,8 @@ type UserResponse struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Hash          string                 `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
 	Story         int32                  `protobuf:"varint,4,opt,name=story,proto3" json:"story,omitempty"`
-	Rate          int32                  `protobuf:"varint,5,opt,name=rate,proto3" json:"rate,omitempty"`
+	NumWins       int32                  `protobuf:"varint,5,opt,name=numWins,proto3" json:"numWins,omitempty"`
+	NumBattles    int32                  `protobuf:"varint,6,opt,name=numBattles,proto3" json:"numBattles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -447,9 +448,16 @@ func (x *UserResponse) GetStory() int32 {
 	return 0
 }
 
-func (x *UserResponse) GetRate() int32 {
+func (x *UserResponse) GetNumWins() int32 {
 	if x != nil {
-		return x.Rate
+		return x.NumWins
+	}
+	return 0
+}
+
+func (x *UserResponse) GetNumBattles() int32 {
+	if x != nil {
+		return x.NumBattles
 	}
 	return 0
 }
@@ -550,30 +558,35 @@ const file_user_proto_rawDesc = "" +
 	"user.proto\x12\x04user\"\x12\n" +
 	"\x10ListUsersRequest\"=\n" +
 	"\x11ListUsersResponse\x12(\n" +
-	"\x05users\x18\x01 \x03(\v2\x12.user.UserResponseR\x05users\"\"\n" +
-	"\fLoginRequest\x12\x12\n" +
-	"\x04hash\x18\x01 \x01(\tR\x04hash\"!\n" +
+	"\x05users\x18\x01 \x03(\v2\x12.user.UserResponseR\x05users\":\n" +
+	"\fLoginRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"!\n" +
 	"\vNameRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"C\n" +
 	"\x11CreateUserRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
-	"\x04hash\x18\x02 \x01(\tR\x04hash\x12\x14\n" +
-	"\x05story\x18\x03 \x01(\x05R\x05story\x12\x12\n" +
-	"\x04rate\x18\x04 \x01(\x05R\x04rate\"u\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x9b\x01\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04hash\x18\x03 \x01(\tR\x04hash\x12\x14\n" +
-	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x12\n" +
-	"\x04rate\x18\x05 \x01(\x05R\x04rate\"p\n" +
+	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x18\n" +
+	"\anumWins\x18\x05 \x01(\x05R\anumWins\x12\x1e\n" +
+	"\n" +
+	"numBattles\x18\x06 \x01(\x05R\n" +
+	"numBattles\"\x96\x01\n" +
 	"\fUserResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04hash\x18\x03 \x01(\tR\x04hash\x12\x14\n" +
-	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x12\n" +
-	"\x04rate\x18\x05 \x01(\x05R\x04rate\"#\n" +
+	"\x05story\x18\x04 \x01(\x05R\x05story\x12\x18\n" +
+	"\anumWins\x18\x05 \x01(\x05R\anumWins\x12\x1e\n" +
+	"\n" +
+	"numBattles\x18\x06 \x01(\x05R\n" +
+	"numBattles\"#\n" +
 	"\x11DeleteUserRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\".\n" +
 	"\x12DeleteUserResponse\x12\x18\n" +
