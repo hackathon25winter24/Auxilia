@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	cfgpkg "auxilia/config"
+	"auxilia/domain/model" // 追加
 	handlergrpc "auxilia/handler/grpc"
 	httpserver "auxilia/handler/http"
 	gorm "auxilia/infrastructure/gorm"
@@ -28,35 +29,36 @@ func main() {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	// 1. gRPCサーバーの作成と設定
+	// ★ 修正点1: Game関連のテーブルをマイグレーション対象に追加
+	db.AutoMigrate(&model.User{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
+
+	// gRPCサーバーの作成
 	s := grpc.NewServer()
+
+	// Userサービスの設定
 	userRepo := gorm.NewUserRepository(db)
-	userHandler := handlergrpc.NewServer(userRepo)
+	userHandler := handlergrpc.NewUserHandler(userRepo)
 	pb.RegisterUserServiceServer(s, userHandler)
+
+	// ★ 修正点2: Gameサービスの設定を追加
+	gameRepo := gorm.NewGameRepository(db)
+	gameHandler := handlergrpc.NewGameHandler(gameRepo)
+	pb.RegisterGameServiceServer(s, gameHandler)
+
 	reflection.Register(s)
 
-	// 2. gRPC-Webハンドラーの作成
-	// 通常、httpserver.NewHandler(s) 内で grpcweb.WrapServer(s) が呼ばれている前提です
+	// --- 以下、既存のハイブリッドサーバー設定（変更なし） ---
 	httpHandler := httpserver.NewHandler(s)
 
-	// 3. ハイブリッド・ハンドラー
-	// 自前で複雑な条件分岐をせず、Content-Typeのみで「生のgRPC」か「それ以外」かを判定します
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		contentType := r.Header.Get("Content-Type")
-
-		// 純粋な gRPC (HTTP/2) の場合
 		if r.ProtoMajor == 2 && strings.HasPrefix(contentType, "application/grpc") {
 			s.ServeHTTP(w, r)
 			return
 		}
-
-		// それ以外 (gRPC-Web, ブラウザのGET/POST, HTTP/1.1) はすべて httpHandler へ
-		// httpHandler (grpcweb) は内部で gRPC-Web かどうかを判別して処理してくれます
 		httpHandler.ServeHTTP(w, r)
 	})
 
-	// 4. H2C (HTTP/2 Cleartext) サーバーの設定
-	// Traefikとの相性を高めるため、標準的な設定にします
 	h2s := &http2.Server{}
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.AppPort,
