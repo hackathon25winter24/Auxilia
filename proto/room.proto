@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package room;
+
+option go_package = "auxilia/pb";
+
+service RoomService {
+    rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
+}
+
+message JoinRoomRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+}
+
+message JoinRoomResponse {
+    bool success = 1;
+}
