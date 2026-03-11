@@ -29,15 +29,6 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 	return &user, nil
 }
 
-// FindByHash: ハッシュ値でユーザーを探す（ログイン用）
-func (r *UserRepository) FindByHash(ctx context.Context, hash string) (*model.User, error) {
-	var user model.User
-	if err := r.db.WithContext(ctx).Where("hash = ?", hash).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 // FindAll: 全ユーザーを取得する
 func (r *UserRepository) FindAll(ctx context.Context) ([]model.User, error) {
 	var users []model.User
