@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm" // GORMのエラー判定用
+	"unicode/utf8"
 )
 
 type UserHandler struct {
@@ -32,6 +33,9 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	// バリデーション
 	if req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "ユーザー名を入力してください")
+	}
+	if utf8.RuneCountInString(req.Name) > 16 {
+			return nil, status.Error(codes.InvalidArgument, "ユーザー名は16文字以内で入力してください")
 	}
 	if len(req.Password) < 6 {
 		return nil, status.Error(codes.InvalidArgument, "パスワードが短すぎます")

@@ -29,8 +29,9 @@ func main() {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	// ★ 修正点1: Game関連のテーブルをマイグレーション対象に追加
-	db.AutoMigrate(&model.User{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
+	// ★ 修正点1: 必要な全モデルをマイグレーション対象に追加
+	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
+	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
 
 	// gRPCサーバーの作成
 	s := grpc.NewServer()
