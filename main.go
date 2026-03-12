@@ -31,7 +31,7 @@ func main() {
 
 	// ★ 修正点1: 必要な全モデルをマイグレーション対象に追加
 	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
-	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
+	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
 
 	// gRPCサーバーの作成
 	s := grpc.NewServer()

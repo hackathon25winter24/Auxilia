@@ -1,10 +1,12 @@
 package gorm
 
 import (
+	"context"
 	"errors"
 
 	"gorm.io/gorm"
 
+	"auxilia/domain"
 	"auxilia/domain/model"
 )
 
@@ -23,7 +25,7 @@ func (r *RoomRepository) JoinRoom(roomID int32, userID string) error {
 		var roomMatch model.RoomMatch
 		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.New("room does not exist")
+				return domain.ErrRoomNotFound
 			}
 			return err
 		}
@@ -41,7 +43,7 @@ func (r *RoomRepository) JoinRoom(roomID int32, userID string) error {
 
 		// 4. 人数制限を確認
 		if count >= 8 {
-			return errors.New("room is full")
+			return domain.ErrRoomFull
 		}
 
 		// 5. 参加者を追加
@@ -55,6 +57,24 @@ func (r *RoomRepository) JoinRoom(roomID int32, userID string) error {
 		if err := tx.Create(&room).Error; err != nil {
 			return err
 		}
+
+		// 6. もし試合が始まっているなら、試合が始まっているとエラーを返す（フロント側で観戦処理に移行するため）
+		if err := tx.Where("room_id = ? AND is_private = ?", roomID, false).First(&model.RoomMatch{}).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrMatchStarted
+			}
+		}
 		return nil
 	})
+}
+
+func (r *RoomRepository) ListRoom(ctx context.Context, roomID int32) ([]model.Room, error) {
+
+	var rooms []model.Room
+
+	if err := r.db.WithContext(ctx).Where("room_id = ?", roomID).Find(&rooms).Error; err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
 }
