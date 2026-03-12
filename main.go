@@ -52,9 +52,9 @@ func main() {
 	pb.RegisterRoomServiceServer(s, roomHandler)
 
 	// ★ 修正点2: Gameサービスの設定を追加
-	gameRepo := gorm.NewGameRepository(db)
-	gameHandler := handlergrpc.NewGameHandler(gameRepo)
-	pb.RegisterGameServiceServer(s, gameHandler)
+	gameRepo := gorm.NewBattleRepository(db)
+	gameHandler := handlergrpc.NewBattleHandler(gameRepo)
+	pb.RegisterBattleServiceServer(s, gameHandler)
 
 	reflection.Register(s)
 
