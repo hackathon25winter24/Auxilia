@@ -15,8 +15,8 @@ func NewBattleRepository(db *gorm.DB) *BattleRepository {
 	return &BattleRepository{db: db}
 }
 
-// CreateGameWithCharacters: 試合情報と初期キャラクターをトランザクション内で作成
-func (r *BattleRepository) CreateGameWithCharacters(roomID uint32, p1ID, p2ID string) (*model.GameData, error) {
+// CreateGame: 試合情報の初期登録
+func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.GameData, error) {
 	now := time.Now()
 	gameData := &model.GameData{
 		RoomID:      uint(roomID),
@@ -27,39 +27,15 @@ func (r *BattleRepository) CreateGameWithCharacters(roomID uint32, p1ID, p2ID st
 		Turn:        1,
 		Is1PTurn:    true,
 		TurnStartAt: now,
+		// Characters は空の状態で開始
 	}
 
-	// トランザクション処理
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		// 1. 試合データの保存
-		if err := tx.Create(gameData).Error; err != nil {
-			return err
-		}
+	// キャラクター登録がないため、シンプルな Create で実装可能
+	if err := r.db.Create(gameData).Error; err != nil {
+		return nil, err
+	}
 
-		// 2. キャラクターの初期化（各プレイヤー3体ずつ）
-		var characters []model.UniqueCharacter
-		for i := 0; i < 6; i++ {
-			is1P := i < 3
-			char := model.UniqueCharacter{
-				RoomID:      gameData.RoomID,
-				Is1P:        is1P,
-				CharacterID: uint(i + 1), // 仮のマスターID
-				HP:          100,         // 仮の初期HP
-				PositionX:   uint(i % 3), // 0,1,2 と並べる
-				PositionY:   uint(i / 3), // 0 or 1
-			}
-			characters = append(characters, char)
-		}
-
-		if err := tx.Create(&characters).Error; err != nil {
-			return err
-		}
-
-		gameData.Characters = characters
-		return nil
-	})
-
-	return gameData, err
+	return gameData, nil
 }
 
 // GetGameDataByRoomID: RoomIDから関連する全データを取得

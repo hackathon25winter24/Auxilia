@@ -23,7 +23,7 @@ func NewBattleHandler(repo repository.BattleRepository) *BattleHandler {
 // CreateGame: 試合の初期登録（ハンドラー層）
 func (h *BattleHandler) CreateGame(ctx context.Context, req *pb.CreateGameRequest) (*pb.GameDataResponse, error) {
 	// リポジトリ層にDB保存を依頼
-	gameData, err := h.repo.CreateGameWithCharacters(req.RoomId, req.Player1Id, req.Player2Id)
+	gameData, err := h.repo.CreateGame(req.RoomId, req.Player1Id, req.Player2Id)
 	if err != nil {
 		return nil, err
 	}
