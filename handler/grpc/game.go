@@ -1,161 +1,101 @@
 package handlergrpc
 
 import (
-	"context"
-	"log"
-
-	repository "auxilia/domain/interface"
-	"auxilia/domain/model"
+	"auxilia/domain/model" // プロジェクト構造に合わせて調整してください
 	"auxilia/pb"
+	"context"
+	repository "auxilia/domain/interface"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-
-type GameHandler struct {
-    pb.UnimplementedGameServiceServer
-    repo repository.GameRepository
+type BattleHandler struct {
+	pb.UnimplementedBattleServiceServer
+	// handler はインターフェース型に依存するようにして
+	// テストや実装の差し替えを容易にします。
+	repo repository.BattleRepository
 }
 
-func NewGameHandler(repo repository.GameRepository) *GameHandler {
-    return &GameHandler{repo: repo}
+func NewBattleHandler(repo repository.BattleRepository) *BattleHandler {
+	return &BattleHandler{repo: repo}
 }
 
-// SaveGame: 試合状況を新規保存する
-func (h *GameHandler) SaveGame(ctx context.Context, req *pb.SaveGameRequest) (*pb.GameResponse, error) {
-    game := req.GetGame()
-    if game == nil {
-        return nil, status.Error(codes.InvalidArgument, "game field is required")
-    }
-    log.Printf("SaveGame requested: RoomID=%d", game.GetRoomId())
-
-    modelGame := h.gameFromProto(game)
-    if err := h.repo.SaveGame(ctx, modelGame); err != nil {
-        log.Printf("Failed to save game: %v", err)
-        return nil, status.Errorf(codes.Internal, "failed to save game data")
-    }
-
-    return &pb.GameResponse{Success: true, Game: game}, nil
-}
-
-// GetGame: RoomIDを指定して特定の試合データを取得する
-func (h *GameHandler) GetGame(ctx context.Context, req *pb.GetGameRequest) (*pb.GameResponse, error) {
-    log.Printf("GetGame requested: RoomID=%d", req.GetRoomId())
-
-    game, err := h.repo.GetByRoomID(ctx, uint(req.GetRoomId()))
-    if err != nil {
-        return nil, status.Errorf(codes.NotFound, "game with RoomID %d not found", req.GetRoomId())
-    }
-    return &pb.GameResponse{Success: true, Game: h.protoFromModel(game)}, nil
-}
-
-// UpdateGame: 既存のRoomIDのデータを更新する
-func (h *GameHandler) UpdateGame(ctx context.Context, req *pb.UpdateGameRequest) (*pb.GameResponse, error) {
-    game := req.GetGame()
-    if game == nil {
-        return nil, status.Error(codes.InvalidArgument, "game field is required")
-    }
-    log.Printf("UpdateGame requested: RoomID=%d", game.GetRoomId())
-
-    modelGame := h.gameFromProto(game)
-    if err := h.repo.UpdateGame(ctx, modelGame); err != nil {
-        log.Printf("Failed to update game: %v", err)
-        return nil, status.Errorf(codes.Internal, "failed to update game data")
-    }
-    return &pb.GameResponse{Success: true, Game: game}, nil
-}
-
-// DeleteGame: 試合終了時などにデータを削除する
-func (h *GameHandler) DeleteGame(ctx context.Context, req *pb.DeleteGameRequest) (*pb.DeleteGameResponse, error) {
-    log.Printf("DeleteGame requested: RoomID=%d", req.GetRoomId())
-
-    if err := h.repo.DeleteGame(ctx, uint(req.GetRoomId())); err != nil {
-        log.Printf("Failed to delete game: %v", err)
-        return nil, status.Errorf(codes.Internal, "failed to delete game data")
-    }
-
-    return &pb.DeleteGameResponse{Success: true}, nil
-}
-
-func (h *GameHandler) ListGames(ctx context.Context, req *pb.ListGamesRequest) (*pb.ListGamesResponse, error) {
-	games, err := h.repo.ListGames(ctx)
+// CreateGame: 試合の初期登録（ハンドラー層）
+func (h *BattleHandler) CreateGame(ctx context.Context, req *pb.CreateGameRequest) (*pb.GameDataResponse, error) {
+	// リポジトリ層にDB保存を依頼
+	gameData, err := h.repo.CreateGameWithCharacters(req.RoomId, req.Player1Id, req.Player2Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list games")
+		return nil, err
 	}
 
-	var pbGames []*pb.Game
-	for _, g := range games {
-		pbGames = append(pbGames, h.protoFromModel(&g))
-	}
-
-	return &pb.ListGamesResponse{Games: pbGames}, nil
+	return convertToResponse(gameData), nil
 }
 
-// --- 変換用ヘルパーメソッド ---
-
-// gameFromProto converts a protobuf Game message into a domain model.
-func (h *GameHandler) gameFromProto(g *pb.Game) *model.GameData {
-	gameData := &model.GameData{
-		RoomID:    uint(g.GetRoomId()),
-		Player1ID: g.GetPlayer_1PId(),
-		Player2ID: g.GetPlayer_2PId(),
-		BaseHP1:   uint(g.GetBaseHp_1P()),
-		BaseHP2:   uint(g.GetBaseHp_2P()),
-		Turn:      uint(g.GetTurn()),
+// GetGameData: 試合情報の取得
+func (h *BattleHandler) GetGameData(ctx context.Context, req *pb.GetGameDataRequest) (*pb.GameDataResponse, error) {
+	gameData, err := h.repo.GetGameDataByRoomID(req.RoomId)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, c := range g.GetCharacters() {
-		char := model.UniqueCharacter{
-			RoomID:      uint(g.GetRoomId()),
-			Is1P:        c.GetIs_1P(),
-			CharacterID: uint(c.GetCharacterId()),
-			HP:          uint(c.GetHp()),
-			PositionX:   uint(c.GetX()),
-			PositionY:   uint(c.GetY()),
-		}
-
-		for _, cond := range c.GetConditions() {
-			char.Conditions = append(char.Conditions, model.CharacterCondition{
-				ConditionID: int(cond.GetConditionId()),
-				LastingTurn: int(cond.GetLastingTurn()),
-			})
-		}
-		gameData.Characters = append(gameData.Characters, char)
-	}
-	return gameData
+	return convertToResponse(gameData), nil
 }
 
-// protoFromModel converts a domain model into a protobuf Game message.
-func (h *GameHandler) protoFromModel(g *model.GameData) *pb.Game {
-	var pbChars []*pb.UniqueCharacter
-	for _, c := range g.Characters {
-		var pbConds []*pb.CharacterCondition
-		for _, cond := range c.Conditions {
-			pbConds = append(pbConds, &pb.CharacterCondition{
-				ConditionId: uint32(cond.ConditionID),
-				LastingTurn: uint32(cond.LastingTurn),
-			})
-		}
+// モデルからgRPCレスポンスへの変換ルーチン（ハンドラー内で共通利用）
+func convertToResponse(m *model.GameData) *pb.GameDataResponse {
+	res := &pb.GameDataResponse{
+		Id:          uint32(m.ID),
+		RoomId:      uint32(m.RoomID),
+		Player1Id:   m.Player1ID,
+		Player2Id:   m.Player2ID,
+		BaseHp1:     uint32(m.BaseHP1),
+		BaseHp2:     uint32(m.BaseHP2),
+		Turn:        uint32(m.Turn),
+		Is_1PTurn:   m.Is1PTurn,
+		TurnStartAt: timestamppb.New(m.TurnStartAt),
+	}
 
-		pbChars = append(pbChars, &pb.UniqueCharacter{
+	for _, c := range m.Characters {
+		char := &pb.UniqueCharacter{
+			Id:          uint32(c.ID),
 			CharacterId: uint32(c.CharacterID),
-			Hp:          int32(c.HP),
-			X:           int32(c.PositionX),
-			Y:           int32(c.PositionY),
 			Is_1P:       c.Is1P,
-			Conditions:  pbConds,
+			Hp:          uint32(c.HP),
+			PositionX:   uint32(c.PositionX),
+			PositionY:   uint32(c.PositionY),
+		}
+		for _, cond := range c.Conditions {
+			char.Conditions = append(char.Conditions, &pb.CharacterCondition{
+				Id:          uint32(cond.ID),
+				ConditionId: int32(cond.ConditionID),
+				LastingTurn: int32(cond.LastingTurn),
+			})
+		}
+		res.Characters = append(res.Characters, char)
+	}
+	return res
+}
+
+func (h *BattleHandler) RegisterCharacters(ctx context.Context, req *pb.RegisterCharactersRequest) (*pb.RegisterCharactersResponse, error) {
+	chars, err := h.repo.RegisterCharacters(req.RoomId, req.Is_1P, req.CharacterIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// レスポンス用に変換
+	var pbChars []*pb.UniqueCharacter
+	for _, c := range chars {
+		pbChars = append(pbChars, &pb.UniqueCharacter{
+			Id:          uint32(c.ID),
+			CharacterId: uint32(c.CharacterID),
+			Is_1P:       c.Is1P,
+			Hp:          uint32(c.HP),
+			PositionX:   uint32(c.PositionX),
+			PositionY:   uint32(c.PositionY),
 		})
 	}
 
-	return &pb.Game{
-		RoomId:      uint32(g.RoomID),
-		Player_1PId:  g.Player1ID,
-		Player_2PId:  g.Player2ID,
-		BaseHp_1P:    int32(g.BaseHP1),
-		BaseHp_2P:    int32(g.BaseHP2),
-		Turn:        uint32(g.Turn),
-		Characters:  pbChars,
-	}
+	return &pb.RegisterCharactersResponse{
+		RegisteredCharacters: pbChars,
+	}, nil
 }
-
