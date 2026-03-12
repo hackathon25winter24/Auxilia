@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RoomService_JoinRoom_FullMethodName = "/room.RoomService/JoinRoom"
-	RoomService_ListRoom_FullMethodName = "/room.RoomService/ListRoom"
+	RoomService_JoinRoom_FullMethodName  = "/room.RoomService/JoinRoom"
+	RoomService_LeaveRoom_FullMethodName = "/room.RoomService/LeaveRoom"
+	RoomService_ListRoom_FullMethodName  = "/room.RoomService/ListRoom"
 )
 
 // RoomServiceClient is the client API for RoomService service.
@@ -28,6 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoomServiceClient interface {
 	JoinRoom(ctx context.Context, in *JoinRoomRequest, opts ...grpc.CallOption) (*JoinRoomResponse, error)
+	LeaveRoom(ctx context.Context, in *LeaveRoomRequest, opts ...grpc.CallOption) (*LeaveRoomResponse, error)
 	ListRoom(ctx context.Context, in *ListRoomRequest, opts ...grpc.CallOption) (*ListRoomResponse, error)
 }
 
@@ -49,6 +51,16 @@ func (c *roomServiceClient) JoinRoom(ctx context.Context, in *JoinRoomRequest, o
 	return out, nil
 }
 
+func (c *roomServiceClient) LeaveRoom(ctx context.Context, in *LeaveRoomRequest, opts ...grpc.CallOption) (*LeaveRoomResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveRoomResponse)
+	err := c.cc.Invoke(ctx, RoomService_LeaveRoom_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *roomServiceClient) ListRoom(ctx context.Context, in *ListRoomRequest, opts ...grpc.CallOption) (*ListRoomResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListRoomResponse)
@@ -64,6 +76,7 @@ func (c *roomServiceClient) ListRoom(ctx context.Context, in *ListRoomRequest, o
 // for forward compatibility.
 type RoomServiceServer interface {
 	JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error)
+	LeaveRoom(context.Context, *LeaveRoomRequest) (*LeaveRoomResponse, error)
 	ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error)
 	mustEmbedUnimplementedRoomServiceServer()
 }
@@ -77,6 +90,9 @@ type UnimplementedRoomServiceServer struct{}
 
 func (UnimplementedRoomServiceServer) JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) LeaveRoom(context.Context, *LeaveRoomRequest) (*LeaveRoomResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveRoom not implemented")
 }
 func (UnimplementedRoomServiceServer) ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListRoom not implemented")
@@ -120,6 +136,24 @@ func _RoomService_JoinRoom_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_LeaveRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).LeaveRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_LeaveRoom_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).LeaveRoom(ctx, req.(*LeaveRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RoomService_ListRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRoomRequest)
 	if err := dec(in); err != nil {
@@ -148,6 +182,10 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinRoom",
 			Handler:    _RoomService_JoinRoom_Handler,
+		},
+		{
+			MethodName: "LeaveRoom",
+			Handler:    _RoomService_LeaveRoom_Handler,
 		},
 		{
 			MethodName: "ListRoom",

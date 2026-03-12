@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package room;
 
-option go_package = "auxilia/pb";
+option go_package = "./pb";
 
 service RoomService {
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
+
+    rpc LeaveRoom (LeaveRoomRequest) returns (LeaveRoomResponse);
 
     rpc ListRoom (ListRoomRequest) returns (ListRoomResponse);
 }
@@ -24,6 +26,15 @@ message JoinRoomRequest {
 }
 
 message JoinRoomResponse {
+    repeated Room rooms = 1;
+}
+
+message LeaveRoomRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+}
+
+message LeaveRoomResponse {
     repeated Room rooms = 1;
 }
 

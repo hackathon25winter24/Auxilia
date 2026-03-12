@@ -49,6 +49,21 @@ func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*p
 
 }
 
+func (h *RoomHandler) LeaveRoom(ctx context.Context, req *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {
+	if err := h.repo.LeaveRoom(req.RoomId, req.UserId); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving: %v", err)
+	}
+
+	return &pb.LeaveRoomResponse{
+		Rooms: response.Rooms,
+	}, nil
+}
+
 func (h *RoomHandler) ListRoom(ctx context.Context, req *pb.ListRoomRequest) (*pb.ListRoomResponse, error) {
 	// 1. IDが同じ全てのroomを取得
 	rooms, err := h.repo.ListRoom(ctx, req.RoomId)

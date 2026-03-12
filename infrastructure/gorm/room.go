@@ -68,6 +68,63 @@ func (r *RoomRepository) JoinRoom(roomID int32, userID string) error {
 	})
 }
 
+func (r *RoomRepository) LeaveRoom(roomID int32, userID string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+
+		// 1. 退出ユーザー削除
+		if err := tx.Where("room_id = ? AND user_id = ?", roomID, userID).Delete(&model.Room{}).Error; err != nil {
+			return err
+		}
+
+		// 2. 残り人数を確認
+		var count int64
+		if err := tx.Model(&model.Room{}).Where("room_id = ?", roomID).Count(&count).Error; err != nil {
+			return err
+		}
+
+		// 3. 残り人数が0ならRoomMatchを削除
+		if count == 0 {
+			if err := tx.Where("id = ?", roomID).Delete(&model.RoomMatch{}).Error; err != nil {
+				return err
+			}
+			return nil // 最後の1人ならオーナー更新処理は不要
+		}
+
+		// 4. 自分がオーナーだったら入室順が早いプレイヤーにオーナーを更新
+		var roomMatch model.RoomMatch
+		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+
+		if roomMatch.OwnerID == userID {
+			var nextOwner model.Room
+			if err := tx.Where("room_id = ?", roomID).Order("joined_at ASC").First(&nextOwner).Error; err != nil {
+				return err
+			}
+
+			if err := tx.Model(&model.RoomMatch{}).Where("id = ?", roomID).Update("owner_id", nextOwner.UserID).Error; err != nil {
+				return err
+			}
+		}
+
+		// 5. 回線落ちなどによる同時退出に備えて念の為
+		if err := tx.Exec(`
+		DELETE FROM room_matches
+		WHERE id = ?
+		AND NOT EXISTS (
+			SELECT 1 FROM rooms WHERE room_id = ?
+		)
+		`, roomID, roomID).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func (r *RoomRepository) ListRoom(ctx context.Context, roomID int32) ([]model.Room, error) {
 
 	var rooms []model.Room
