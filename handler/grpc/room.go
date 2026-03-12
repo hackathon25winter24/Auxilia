@@ -60,8 +60,8 @@ func (h *RoomHandler) ListRoom(ctx context.Context, req *pb.ListRoomRequest) (*p
 	var pbRooms []*pb.Room
 	for _, r := range rooms {
 		pbRooms = append(pbRooms, &pb.Room{
-			RoomID:  r.RoomID,
-			UserID:  r.UserID,
+			RoomId:  r.RoomID,
+			UserId:  r.UserID,
 			State:   r.State,
 			IsReady: r.IsReady,
 			JoinedAt: r.JoinedAt.Format(time.RFC3339),
