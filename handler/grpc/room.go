@@ -87,3 +87,58 @@ func (h *RoomHandler) ListRoom(ctx context.Context, req *pb.ListRoomRequest) (*p
 		Rooms: pbRooms,
 	}, nil
 }
+
+func (h *RoomHandler) EnterRing(ctx context.Context, req *pb.EnterRingRequest) (*pb.EnterRingResponse, error) {
+	if err := h.repo.EnterRing(req.RoomId, req.UserId); err != nil {
+
+		if errors.Is(err, domain.ErrRingFull) {
+			return nil, status.Errorf(codes.FailedPrecondition, "ring in room %d is full", req.RoomId)
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list rooms after entering ring: %v", err)
+	}
+
+	return &pb.EnterRingResponse{
+		Rooms: response.Rooms,
+	}, nil
+}
+
+func (h *RoomHandler) LeaveRing(ctx context.Context, req *pb.LeaveRingRequest) (*pb.LeaveRingResponse, error) {
+    if err := h.repo.LeaveRing(req.RoomId, req.UserId); err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+    response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving ring: %v", err)
+    }
+
+    return &pb.LeaveRingResponse{
+        Rooms: response.Rooms,
+    }, nil
+}
+
+func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*pb.SetReadyResponse, error) {
+    if err := h.repo.SetReady(req.RoomId, req.UserId, req.Ready); err != nil {
+
+        if errors.Is(err, domain.ErrSpectatorCannotReady) {
+            return nil, status.Errorf(codes.FailedPrecondition, "spectator cannot ready")
+        }
+
+        return nil, status.Errorf(codes.Internal, err.Error())
+    }
+
+    response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "failed to list rooms after ready change: %v", err)
+    }
+
+    return &pb.SetReadyResponse{
+        Rooms: response.Rooms,
+    }, nil
+}

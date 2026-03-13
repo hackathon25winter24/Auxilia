@@ -377,6 +377,302 @@ func (x *ListRoomResponse) GetRooms() []*Room {
 	return nil
 }
 
+type EnterRingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnterRingRequest) Reset() {
+	*x = EnterRingRequest{}
+	mi := &file_proto_room_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnterRingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnterRingRequest) ProtoMessage() {}
+
+func (x *EnterRingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnterRingRequest.ProtoReflect.Descriptor instead.
+func (*EnterRingRequest) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *EnterRingRequest) GetRoomId() int32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *EnterRingRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type EnterRingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rooms         []*Room                `protobuf:"bytes,1,rep,name=rooms,proto3" json:"rooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnterRingResponse) Reset() {
+	*x = EnterRingResponse{}
+	mi := &file_proto_room_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnterRingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnterRingResponse) ProtoMessage() {}
+
+func (x *EnterRingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnterRingResponse.ProtoReflect.Descriptor instead.
+func (*EnterRingResponse) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *EnterRingResponse) GetRooms() []*Room {
+	if x != nil {
+		return x.Rooms
+	}
+	return nil
+}
+
+type LeaveRingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveRingRequest) Reset() {
+	*x = LeaveRingRequest{}
+	mi := &file_proto_room_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveRingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveRingRequest) ProtoMessage() {}
+
+func (x *LeaveRingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveRingRequest.ProtoReflect.Descriptor instead.
+func (*LeaveRingRequest) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *LeaveRingRequest) GetRoomId() int32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *LeaveRingRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type LeaveRingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rooms         []*Room                `protobuf:"bytes,1,rep,name=rooms,proto3" json:"rooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeaveRingResponse) Reset() {
+	*x = LeaveRingResponse{}
+	mi := &file_proto_room_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeaveRingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeaveRingResponse) ProtoMessage() {}
+
+func (x *LeaveRingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeaveRingResponse.ProtoReflect.Descriptor instead.
+func (*LeaveRingResponse) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LeaveRingResponse) GetRooms() []*Room {
+	if x != nil {
+		return x.Rooms
+	}
+	return nil
+}
+
+type SetReadyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Ready         bool                   `protobuf:"varint,3,opt,name=ready,proto3" json:"ready,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetReadyRequest) Reset() {
+	*x = SetReadyRequest{}
+	mi := &file_proto_room_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetReadyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetReadyRequest) ProtoMessage() {}
+
+func (x *SetReadyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetReadyRequest.ProtoReflect.Descriptor instead.
+func (*SetReadyRequest) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SetReadyRequest) GetRoomId() int32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *SetReadyRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SetReadyRequest) GetReady() bool {
+	if x != nil {
+		return x.Ready
+	}
+	return false
+}
+
+type SetReadyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rooms         []*Room                `protobuf:"bytes,1,rep,name=rooms,proto3" json:"rooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetReadyResponse) Reset() {
+	*x = SetReadyResponse{}
+	mi := &file_proto_room_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetReadyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetReadyResponse) ProtoMessage() {}
+
+func (x *SetReadyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetReadyResponse.ProtoReflect.Descriptor instead.
+func (*SetReadyResponse) Descriptor() ([]byte, []int) {
+	return file_proto_room_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SetReadyResponse) GetRooms() []*Room {
+	if x != nil {
+		return x.Rooms
+	}
+	return nil
+}
+
 var File_proto_room_proto protoreflect.FileDescriptor
 
 const file_proto_room_proto_rawDesc = "" +
@@ -404,11 +700,33 @@ const file_proto_room_proto_rawDesc = "" +
 	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\"4\n" +
 	"\x10ListRoomResponse\x12 \n" +
 	"\x05rooms\x18\x01 \x03(\v2\n" +
-	".room.RoomR\x05rooms2\xc1\x01\n" +
+	".room.RoomR\x05rooms\"D\n" +
+	"\x10EnterRingRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"5\n" +
+	"\x11EnterRingResponse\x12 \n" +
+	"\x05rooms\x18\x01 \x03(\v2\n" +
+	".room.RoomR\x05rooms\"D\n" +
+	"\x10LeaveRingRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"5\n" +
+	"\x11LeaveRingResponse\x12 \n" +
+	"\x05rooms\x18\x01 \x03(\v2\n" +
+	".room.RoomR\x05rooms\"Y\n" +
+	"\x0fSetReadyRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
+	"\x05ready\x18\x03 \x01(\bR\x05ready\"4\n" +
+	"\x10SetReadyResponse\x12 \n" +
+	"\x05rooms\x18\x01 \x03(\v2\n" +
+	".room.RoomR\x05rooms2\xf8\x02\n" +
 	"\vRoomService\x129\n" +
 	"\bJoinRoom\x12\x15.room.JoinRoomRequest\x1a\x16.room.JoinRoomResponse\x12<\n" +
 	"\tLeaveRoom\x12\x16.room.LeaveRoomRequest\x1a\x17.room.LeaveRoomResponse\x129\n" +
-	"\bListRoom\x12\x15.room.ListRoomRequest\x1a\x16.room.ListRoomResponseB\x06Z\x04./pbb\x06proto3"
+	"\bListRoom\x12\x15.room.ListRoomRequest\x1a\x16.room.ListRoomResponse\x12<\n" +
+	"\tEnterRing\x12\x16.room.EnterRingRequest\x1a\x17.room.EnterRingResponse\x12<\n" +
+	"\tLeaveRing\x12\x16.room.LeaveRingRequest\x1a\x17.room.LeaveRingResponse\x129\n" +
+	"\bSetReady\x12\x15.room.SetReadyRequest\x1a\x16.room.SetReadyResponseB\x06Z\x04./pbb\x06proto3"
 
 var (
 	file_proto_room_proto_rawDescOnce sync.Once
@@ -422,7 +740,7 @@ func file_proto_room_proto_rawDescGZIP() []byte {
 	return file_proto_room_proto_rawDescData
 }
 
-var file_proto_room_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_proto_room_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_proto_room_proto_goTypes = []any{
 	(*Room)(nil),              // 0: room.Room
 	(*JoinRoomRequest)(nil),   // 1: room.JoinRoomRequest
@@ -431,22 +749,37 @@ var file_proto_room_proto_goTypes = []any{
 	(*LeaveRoomResponse)(nil), // 4: room.LeaveRoomResponse
 	(*ListRoomRequest)(nil),   // 5: room.ListRoomRequest
 	(*ListRoomResponse)(nil),  // 6: room.ListRoomResponse
+	(*EnterRingRequest)(nil),  // 7: room.EnterRingRequest
+	(*EnterRingResponse)(nil), // 8: room.EnterRingResponse
+	(*LeaveRingRequest)(nil),  // 9: room.LeaveRingRequest
+	(*LeaveRingResponse)(nil), // 10: room.LeaveRingResponse
+	(*SetReadyRequest)(nil),   // 11: room.SetReadyRequest
+	(*SetReadyResponse)(nil),  // 12: room.SetReadyResponse
 }
 var file_proto_room_proto_depIdxs = []int32{
-	0, // 0: room.JoinRoomResponse.rooms:type_name -> room.Room
-	0, // 1: room.LeaveRoomResponse.rooms:type_name -> room.Room
-	0, // 2: room.ListRoomResponse.rooms:type_name -> room.Room
-	1, // 3: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
-	3, // 4: room.RoomService.LeaveRoom:input_type -> room.LeaveRoomRequest
-	5, // 5: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
-	2, // 6: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
-	4, // 7: room.RoomService.LeaveRoom:output_type -> room.LeaveRoomResponse
-	6, // 8: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: room.JoinRoomResponse.rooms:type_name -> room.Room
+	0,  // 1: room.LeaveRoomResponse.rooms:type_name -> room.Room
+	0,  // 2: room.ListRoomResponse.rooms:type_name -> room.Room
+	0,  // 3: room.EnterRingResponse.rooms:type_name -> room.Room
+	0,  // 4: room.LeaveRingResponse.rooms:type_name -> room.Room
+	0,  // 5: room.SetReadyResponse.rooms:type_name -> room.Room
+	1,  // 6: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
+	3,  // 7: room.RoomService.LeaveRoom:input_type -> room.LeaveRoomRequest
+	5,  // 8: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
+	7,  // 9: room.RoomService.EnterRing:input_type -> room.EnterRingRequest
+	9,  // 10: room.RoomService.LeaveRing:input_type -> room.LeaveRingRequest
+	11, // 11: room.RoomService.SetReady:input_type -> room.SetReadyRequest
+	2,  // 12: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
+	4,  // 13: room.RoomService.LeaveRoom:output_type -> room.LeaveRoomResponse
+	6,  // 14: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
+	8,  // 15: room.RoomService.EnterRing:output_type -> room.EnterRingResponse
+	10, // 16: room.RoomService.LeaveRing:output_type -> room.LeaveRingResponse
+	12, // 17: room.RoomService.SetReady:output_type -> room.SetReadyResponse
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_proto_room_proto_init() }
@@ -460,7 +793,7 @@ func file_proto_room_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_room_proto_rawDesc), len(file_proto_room_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

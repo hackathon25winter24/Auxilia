@@ -22,6 +22,9 @@ const (
 	RoomService_JoinRoom_FullMethodName  = "/room.RoomService/JoinRoom"
 	RoomService_LeaveRoom_FullMethodName = "/room.RoomService/LeaveRoom"
 	RoomService_ListRoom_FullMethodName  = "/room.RoomService/ListRoom"
+	RoomService_EnterRing_FullMethodName = "/room.RoomService/EnterRing"
+	RoomService_LeaveRing_FullMethodName = "/room.RoomService/LeaveRing"
+	RoomService_SetReady_FullMethodName  = "/room.RoomService/SetReady"
 )
 
 // RoomServiceClient is the client API for RoomService service.
@@ -31,6 +34,9 @@ type RoomServiceClient interface {
 	JoinRoom(ctx context.Context, in *JoinRoomRequest, opts ...grpc.CallOption) (*JoinRoomResponse, error)
 	LeaveRoom(ctx context.Context, in *LeaveRoomRequest, opts ...grpc.CallOption) (*LeaveRoomResponse, error)
 	ListRoom(ctx context.Context, in *ListRoomRequest, opts ...grpc.CallOption) (*ListRoomResponse, error)
+	EnterRing(ctx context.Context, in *EnterRingRequest, opts ...grpc.CallOption) (*EnterRingResponse, error)
+	LeaveRing(ctx context.Context, in *LeaveRingRequest, opts ...grpc.CallOption) (*LeaveRingResponse, error)
+	SetReady(ctx context.Context, in *SetReadyRequest, opts ...grpc.CallOption) (*SetReadyResponse, error)
 }
 
 type roomServiceClient struct {
@@ -71,6 +77,36 @@ func (c *roomServiceClient) ListRoom(ctx context.Context, in *ListRoomRequest, o
 	return out, nil
 }
 
+func (c *roomServiceClient) EnterRing(ctx context.Context, in *EnterRingRequest, opts ...grpc.CallOption) (*EnterRingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnterRingResponse)
+	err := c.cc.Invoke(ctx, RoomService_EnterRing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *roomServiceClient) LeaveRing(ctx context.Context, in *LeaveRingRequest, opts ...grpc.CallOption) (*LeaveRingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveRingResponse)
+	err := c.cc.Invoke(ctx, RoomService_LeaveRing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *roomServiceClient) SetReady(ctx context.Context, in *SetReadyRequest, opts ...grpc.CallOption) (*SetReadyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetReadyResponse)
+	err := c.cc.Invoke(ctx, RoomService_SetReady_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoomServiceServer is the server API for RoomService service.
 // All implementations must embed UnimplementedRoomServiceServer
 // for forward compatibility.
@@ -78,6 +114,9 @@ type RoomServiceServer interface {
 	JoinRoom(context.Context, *JoinRoomRequest) (*JoinRoomResponse, error)
 	LeaveRoom(context.Context, *LeaveRoomRequest) (*LeaveRoomResponse, error)
 	ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error)
+	EnterRing(context.Context, *EnterRingRequest) (*EnterRingResponse, error)
+	LeaveRing(context.Context, *LeaveRingRequest) (*LeaveRingResponse, error)
+	SetReady(context.Context, *SetReadyRequest) (*SetReadyResponse, error)
 	mustEmbedUnimplementedRoomServiceServer()
 }
 
@@ -96,6 +135,15 @@ func (UnimplementedRoomServiceServer) LeaveRoom(context.Context, *LeaveRoomReque
 }
 func (UnimplementedRoomServiceServer) ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) EnterRing(context.Context, *EnterRingRequest) (*EnterRingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnterRing not implemented")
+}
+func (UnimplementedRoomServiceServer) LeaveRing(context.Context, *LeaveRingRequest) (*LeaveRingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveRing not implemented")
+}
+func (UnimplementedRoomServiceServer) SetReady(context.Context, *SetReadyRequest) (*SetReadyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetReady not implemented")
 }
 func (UnimplementedRoomServiceServer) mustEmbedUnimplementedRoomServiceServer() {}
 func (UnimplementedRoomServiceServer) testEmbeddedByValue()                     {}
@@ -172,6 +220,60 @@ func _RoomService_ListRoom_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_EnterRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnterRingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).EnterRing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_EnterRing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).EnterRing(ctx, req.(*EnterRingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoomService_LeaveRing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveRingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).LeaveRing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_LeaveRing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).LeaveRing(ctx, req.(*LeaveRingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoomService_SetReady_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetReadyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).SetReady(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomService_SetReady_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).SetReady(ctx, req.(*SetReadyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoomService_ServiceDesc is the grpc.ServiceDesc for RoomService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +292,18 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRoom",
 			Handler:    _RoomService_ListRoom_Handler,
+		},
+		{
+			MethodName: "EnterRing",
+			Handler:    _RoomService_EnterRing_Handler,
+		},
+		{
+			MethodName: "LeaveRing",
+			Handler:    _RoomService_LeaveRing_Handler,
+		},
+		{
+			MethodName: "SetReady",
+			Handler:    _RoomService_SetReady_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
