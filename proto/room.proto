@@ -7,7 +7,15 @@ option go_package = "auxilia/pb";
 service RoomService {
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
 
+    rpc LeaveRoom (LeaveRoomRequest) returns (LeaveRoomResponse);
+
     rpc ListRoom (ListRoomRequest) returns (ListRoomResponse);
+
+    rpc EnterRing (EnterRingRequest) returns (EnterRingResponse);
+
+    rpc LeaveRing (LeaveRingRequest) returns (LeaveRingResponse);
+
+    rpc SetReady (SetReadyRequest) returns (SetReadyResponse);
 }
 
 message Room {
@@ -27,10 +35,47 @@ message JoinRoomResponse {
     repeated Room rooms = 1;
 }
 
+message LeaveRoomRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+}
+
+message LeaveRoomResponse {
+    repeated Room rooms = 1;
+}
+
 message ListRoomRequest {
     int32 room_id = 1;
 }
 
 message ListRoomResponse {
+    repeated Room rooms = 1;
+}
+
+message EnterRingRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+}
+
+message EnterRingResponse {
+    repeated Room rooms = 1;
+}
+
+message LeaveRingRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+}
+
+message LeaveRingResponse {
+    repeated Room rooms = 1;
+}
+
+message SetReadyRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+    bool ready = 3;
+}
+
+message SetReadyResponse {
     repeated Room rooms = 1;
 }
