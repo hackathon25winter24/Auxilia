@@ -15,9 +15,9 @@ type User struct {
     NumBattles int     `json:"num_battles"`
     Rate int `json:"rate"`
     HomeCharacterID int `json:"home_character_id"`
-    Deck1 int `json:"deck1"` // 初期値は-1で、未設定を表します。
-    Deck2 int `json:"deck2"`
-    Deck3 int `json:"deck3"`
+    Deck1 int `json:"deck_1"` // 初期値は-1で、未設定を表します。
+    Deck2 int `json:"deck_2"`
+    Deck3 int `json:"deck_3"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {

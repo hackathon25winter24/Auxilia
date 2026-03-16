@@ -15,8 +15,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm" // GORMのエラー判定用
 	"unicode/utf8"
-
-	"fmt"
 )
 
 type UserHandler struct {
@@ -54,7 +52,7 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		ID:         uuid.New(),
 		Name:       req.Name,
 		Hash:       string(hashedPassword),
-		Story:      1,
+		Story:      2,
 		NumWins:    0,
 		NumBattles: 0,
 		Rate:       0,
