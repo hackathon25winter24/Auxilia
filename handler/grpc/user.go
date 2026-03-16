@@ -15,6 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm" // GORMのエラー判定用
 	"unicode/utf8"
+
+	"fmt"
 )
 
 type UserHandler struct {
@@ -55,6 +57,11 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		Story:      1,
 		NumWins:    0,
 		NumBattles: 0,
+		Rate:       0,
+		HomeCharacterID: 0,
+		Deck1:      -1,
+		Deck2:      -1,
+		Deck3:      -1,
 	}
 
 	// 3. DB保存とエラー判定
@@ -124,6 +131,11 @@ func (h *UserHandler) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest)
 	if req.Story > 0 { user.Story = int(req.Story) }
 	if req.NumWins >= 0 { user.NumWins = int(req.NumWins) }
 	if req.NumBattles >= 0 { user.NumBattles = int(req.NumBattles) }
+	if req.Rate >= 0 { user.Rate = int(req.Rate) }
+	if req.HomeCharacterId >= 0 { user.HomeCharacterID = int(req.HomeCharacterId) }
+	if req.Deck1 >= -1 { user.Deck1 = int(req.Deck1) }
+	if req.Deck2 >= -1 { user.Deck2 = int(req.Deck2) }
+	if req.Deck3 >= -1 { user.Deck3 = int(req.Deck3) }
 
 	if err := h.repo.Update(ctx, user); err != nil {
 		// 名前を更新した際の一意制約チェック
@@ -190,5 +202,10 @@ func (h *UserHandler) toPBResponse(u *model.User) *pb.UserResponse {
 		Story: int32(u.Story),
 		NumWins: int32(u.NumWins),
 		NumBattles: int32(u.NumBattles),
+		Rate: int32(u.Rate),
+		HomeCharacterId: int32(u.HomeCharacterID),
+		Deck1: int32(u.Deck1),
+		Deck2: int32(u.Deck2),
+		Deck3: int32(u.Deck3),
 	}
 }
