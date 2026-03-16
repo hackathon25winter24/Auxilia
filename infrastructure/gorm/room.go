@@ -95,8 +95,9 @@ func (r *RoomRepository) UpdateRoomState(ctx context.Context, roomID int32, user
 	return nil
 }
 
-func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) (string, string, error) {
+	var p1ID, p2ID string
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var roomMatch model.RoomMatch
 		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -125,9 +126,11 @@ func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) error {
 			}
 			if room.State == model.StatePlayer1 {
 				hasPlayer1 = true
+				p1ID = room.UserID
 			}
 			if room.State == model.StatePlayer2 {
 				hasPlayer2 = true
+				p2ID = room.UserID
 			}
 		}
 
@@ -139,4 +142,5 @@ func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) error {
 			Where("id = ?", roomID).
 			Update("is_gaming", true).Error
 	})
+	return p1ID, p2ID, err
 }

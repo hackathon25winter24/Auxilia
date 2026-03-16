@@ -15,11 +15,12 @@ import (
 
 type RoomHandler struct {
 	pb.UnimplementedRoomServiceServer
-	repo repo.RoomRepository
+	repo       repo.RoomRepository
+	battleRepo repo.BattleRepository
 }
 
-func NewRoomHandler(repo repo.RoomRepository) *RoomHandler {
-	return &RoomHandler{repo: repo}
+func NewRoomHandler(repo repo.RoomRepository, battleRepo repo.BattleRepository) *RoomHandler {
+	return &RoomHandler{repo: repo, battleRepo: battleRepo}
 }
 
 func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
@@ -97,7 +98,8 @@ func (h *RoomHandler) UpdateRoomState(ctx context.Context, req *pb.UpdateRoomSta
 }
 
 func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest) (*pb.StartMatchResponse, error) {
-	if err := h.repo.StartMatch(ctx, req.RoomId); err != nil {
+	p1ID, p2ID, err := h.repo.StartMatch(ctx, req.RoomId)
+	if err != nil {
 		if errors.Is(err, domain.ErrRoomNotFound) {
 			return nil, status.Errorf(codes.NotFound, "room with ID %d not found", req.RoomId)
 		}
@@ -110,13 +112,19 @@ func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest)
 		return nil, status.Errorf(codes.Internal, "failed to start match: %v", err)
 	}
 
+	gameData, err := h.battleRepo.CreateGame(uint32(req.RoomId), p1ID, p2ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create game: %v", err)
+	}
+
 	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.StartMatchResponse{
-		Rooms:   response.Rooms,
-		Started: true,
+		Rooms:    response.Rooms,
+		Started:  true,
+		GameData: convertToResponse(gameData),
 	}, nil
 }

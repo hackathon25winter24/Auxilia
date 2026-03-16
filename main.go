@@ -71,15 +71,15 @@ func main() {
 	roomMatchHandler := handlergrpc.NewRoomMatchServer(roomMatchRepo)
 	pb.RegisterRoomMatchServiceServer(s, roomMatchHandler)
 
-	// Roomサービスの設定を追加
-	roomRepo := gorm.NewRoomRepository(db)
-	roomHandler := handlergrpc.NewRoomHandler(roomRepo)
-	pb.RegisterRoomServiceServer(s, roomHandler)
-
-	// ★ 修正点2: Gameサービスの設定を追加
+	// Gameサービスの設定を追加
 	gameRepo := gorm.NewBattleRepository(db)
 	gameHandler := handlergrpc.NewBattleHandler(gameRepo)
 	pb.RegisterBattleServiceServer(s, gameHandler)
+
+	// Roomサービスの設定を追加
+	roomRepo := gorm.NewRoomRepository(db)
+	roomHandler := handlergrpc.NewRoomHandler(roomRepo, gameRepo)
+	pb.RegisterRoomServiceServer(s, roomHandler)
 
 	reflection.Register(s)
 

@@ -441,6 +441,7 @@ type StartMatchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Rooms         []*Room                `protobuf:"bytes,1,rep,name=rooms,proto3" json:"rooms,omitempty"`
 	Started       bool                   `protobuf:"varint,2,opt,name=started,proto3" json:"started,omitempty"`
+	GameData      *GameDataResponse      `protobuf:"bytes,3,opt,name=game_data,json=gameData,proto3" json:"game_data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -489,12 +490,20 @@ func (x *StartMatchResponse) GetStarted() bool {
 	return false
 }
 
+func (x *StartMatchResponse) GetGameData() *GameDataResponse {
+	if x != nil {
+		return x.GameData
+	}
+	return nil
+}
+
 var File_room_proto protoreflect.FileDescriptor
 
 const file_room_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"room.proto\x12\x04room\"\x86\x01\n" +
+	"room.proto\x12\x04room\x1a\n" +
+	"game.proto\"\x86\x01\n" +
 	"\x04Room\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
@@ -521,11 +530,12 @@ const file_room_proto_rawDesc = "" +
 	"\x05rooms\x18\x01 \x03(\v2\n" +
 	".room.RoomR\x05rooms\",\n" +
 	"\x11StartMatchRequest\x12\x17\n" +
-	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\"P\n" +
+	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\"\x8d\x01\n" +
 	"\x12StartMatchResponse\x12 \n" +
 	"\x05rooms\x18\x01 \x03(\v2\n" +
 	".room.RoomR\x05rooms\x12\x18\n" +
-	"\astarted\x18\x02 \x01(\bR\astarted2\x94\x02\n" +
+	"\astarted\x18\x02 \x01(\bR\astarted\x12;\n" +
+	"\tgame_data\x18\x03 \x01(\v2\x1e.game.network.GameDataResponseR\bgameData2\x94\x02\n" +
 	"\vRoomService\x129\n" +
 	"\bJoinRoom\x12\x15.room.JoinRoomRequest\x1a\x16.room.JoinRoomResponse\x129\n" +
 	"\bListRoom\x12\x15.room.ListRoomRequest\x1a\x16.room.ListRoomResponse\x12N\n" +
@@ -557,25 +567,27 @@ var file_room_proto_goTypes = []any{
 	(*UpdateRoomStateResponse)(nil), // 6: room.UpdateRoomStateResponse
 	(*StartMatchRequest)(nil),       // 7: room.StartMatchRequest
 	(*StartMatchResponse)(nil),      // 8: room.StartMatchResponse
+	(*GameDataResponse)(nil),        // 9: game.network.GameDataResponse
 }
 var file_room_proto_depIdxs = []int32{
 	0, // 0: room.JoinRoomResponse.rooms:type_name -> room.Room
 	0, // 1: room.ListRoomResponse.rooms:type_name -> room.Room
 	0, // 2: room.UpdateRoomStateResponse.rooms:type_name -> room.Room
 	0, // 3: room.StartMatchResponse.rooms:type_name -> room.Room
-	1, // 4: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
-	3, // 5: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
-	5, // 6: room.RoomService.UpdateRoomState:input_type -> room.UpdateRoomStateRequest
-	7, // 7: room.RoomService.StartMatch:input_type -> room.StartMatchRequest
-	2, // 8: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
-	4, // 9: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
-	6, // 10: room.RoomService.UpdateRoomState:output_type -> room.UpdateRoomStateResponse
-	8, // 11: room.RoomService.StartMatch:output_type -> room.StartMatchResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	9, // 4: room.StartMatchResponse.game_data:type_name -> game.network.GameDataResponse
+	1, // 5: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
+	3, // 6: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
+	5, // 7: room.RoomService.UpdateRoomState:input_type -> room.UpdateRoomStateRequest
+	7, // 8: room.RoomService.StartMatch:input_type -> room.StartMatchRequest
+	2, // 9: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
+	4, // 10: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
+	6, // 11: room.RoomService.UpdateRoomState:output_type -> room.UpdateRoomStateResponse
+	8, // 12: room.RoomService.StartMatch:output_type -> room.StartMatchResponse
+	9, // [9:13] is the sub-list for method output_type
+	5, // [5:9] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_room_proto_init() }
@@ -583,6 +595,7 @@ func file_room_proto_init() {
 	if File_room_proto != nil {
 		return
 	}
+	file_game_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
