@@ -52,7 +52,7 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		ID:         uuid.New(),
 		Name:       req.Name,
 		Hash:       string(hashedPassword),
-		Story:      2,
+		Story:      1,
 		NumWins:    0,
 		NumBattles: 0,
 		Rate:       0,
