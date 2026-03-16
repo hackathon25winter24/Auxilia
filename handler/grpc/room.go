@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"auxilia/pb"
-	repo "auxilia/domain/interface"
 	"auxilia/domain"
+	repo "auxilia/domain/interface"
+	"auxilia/pb"
 )
 
 type RoomHandler struct {
@@ -60,10 +60,10 @@ func (h *RoomHandler) ListRoom(ctx context.Context, req *pb.ListRoomRequest) (*p
 	var pbRooms []*pb.Room
 	for _, r := range rooms {
 		pbRooms = append(pbRooms, &pb.Room{
-			RoomId:  r.RoomID,
-			UserId:  r.UserID,
-			State:   r.State,
-			IsReady: r.IsReady,
+			RoomId:   r.RoomID,
+			UserId:   r.UserID,
+			State:    r.State,
+			IsReady:  r.IsReady,
 			JoinedAt: r.JoinedAt.Format(time.RFC3339),
 		})
 	}
@@ -71,4 +71,27 @@ func (h *RoomHandler) ListRoom(ctx context.Context, req *pb.ListRoomRequest) (*p
 	return &pb.ListRoomResponse{
 		Rooms: pbRooms,
 	}, nil
+}
+
+func (h *RoomHandler) UpdateRoomState(ctx context.Context, req *pb.UpdateRoomStateRequest) (*pb.UpdateRoomStateResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	if req.State < 0 || req.State > 2 {
+		return nil, status.Error(codes.InvalidArgument, "state must be 0 (spectator), 1 (1P), or 2 (2P)")
+	}
+
+	if err := h.repo.UpdateRoomState(ctx, req.RoomId, req.UserId, req.State, req.IsReady); err != nil {
+		if errors.Is(err, domain.ErrRoomNotFound) {
+			return nil, status.Errorf(codes.NotFound, "user %s is not in room %d", req.UserId, req.RoomId)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to update room state: %v", err)
+	}
+
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.UpdateRoomStateResponse{Rooms: response.Rooms}, nil
 }

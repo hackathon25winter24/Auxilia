@@ -8,6 +8,8 @@ service RoomService {
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
 
     rpc ListRoom (ListRoomRequest) returns (ListRoomResponse);
+
+    rpc UpdateRoomState (UpdateRoomStateRequest) returns (UpdateRoomStateResponse);
 }
 
 message Room {
@@ -32,5 +34,16 @@ message ListRoomRequest {
 }
 
 message ListRoomResponse {
+    repeated Room rooms = 1;
+}
+
+message UpdateRoomStateRequest {
+    int32 room_id = 1;
+    string user_id = 2;
+    int32 state = 3;     // 0=観戦, 1=1P, 2=2P
+    bool is_ready = 4;
+}
+
+message UpdateRoomStateResponse {
     repeated Room rooms = 1;
 }

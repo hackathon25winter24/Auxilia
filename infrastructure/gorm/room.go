@@ -78,3 +78,21 @@ func (r *RoomRepository) ListRoom(ctx context.Context, roomID int32) ([]model.Ro
 
 	return rooms, nil
 }
+
+func (r *RoomRepository) UpdateRoomState(ctx context.Context, roomID int32, userID string, state int32, isReady bool) error {
+	result := r.db.WithContext(ctx).
+		Model(&model.Room{}).
+		Where("room_id = ? AND user_id = ?", roomID, userID).
+		Updates(map[string]any{
+			"state":    state,
+			"is_ready": isReady,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrRoomNotFound
+	}
+	return nil
+}
