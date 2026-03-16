@@ -35,12 +35,23 @@ func main() {
 
 	// room_matches の is_private を is_gaming に移行し、既存値はすべて false に揃える
 	migratedFromIsPrivate := false
-	if db.Migrator().HasColumn(&model.RoomMatch{}, "is_private") {
+	hasIsPrivate := db.Migrator().HasColumn(&model.RoomMatch{}, "is_private")
+	hasIsGaming := db.Migrator().HasColumn(&model.RoomMatch{}, "is_gaming")
+
+	if hasIsPrivate && !hasIsGaming {
 		if err := db.Migrator().RenameColumn(&model.RoomMatch{}, "is_private", "is_gaming"); err != nil {
 			log.Fatalf("failed to rename column is_private -> is_gaming: %v", err)
 		}
 		migratedFromIsPrivate = true
 	}
+
+	if hasIsPrivate && hasIsGaming {
+		if err := db.Migrator().DropColumn(&model.RoomMatch{}, "is_private"); err != nil {
+			log.Printf("warning: failed to drop legacy column is_private: %v", err)
+		}
+		migratedFromIsPrivate = true
+	}
+
 	if migratedFromIsPrivate {
 		if err := db.Model(&model.RoomMatch{}).Update("is_gaming", false).Error; err != nil {
 			log.Fatalf("failed to reset is_gaming values: %v", err)
