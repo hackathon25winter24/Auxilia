@@ -35,7 +35,7 @@ func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*p
 		if errors.Is(err, domain.ErrMatchStarted) {
 			return nil, status.Errorf(codes.FailedPrecondition, "match in room with ID %d has already started", req.RoomId)
 		}
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
@@ -94,4 +94,29 @@ func (h *RoomHandler) UpdateRoomState(ctx context.Context, req *pb.UpdateRoomSta
 	}
 
 	return &pb.UpdateRoomStateResponse{Rooms: response.Rooms}, nil
+}
+
+func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest) (*pb.StartMatchResponse, error) {
+	if err := h.repo.StartMatch(ctx, req.RoomId); err != nil {
+		if errors.Is(err, domain.ErrRoomNotFound) {
+			return nil, status.Errorf(codes.NotFound, "room with ID %d not found", req.RoomId)
+		}
+		if errors.Is(err, domain.ErrMatchStarted) {
+			return nil, status.Errorf(codes.FailedPrecondition, "match in room with ID %d has already started", req.RoomId)
+		}
+		if errors.Is(err, domain.ErrNotAllUsersReady) || errors.Is(err, domain.ErrPlayerSlotsNotFilled) {
+			return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to start match: %v", err)
+	}
+
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.StartMatchResponse{
+		Rooms:   response.Rooms,
+		Started: true,
+	}, nil
 }

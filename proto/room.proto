@@ -10,6 +10,8 @@ service RoomService {
     rpc ListRoom (ListRoomRequest) returns (ListRoomResponse);
 
     rpc UpdateRoomState (UpdateRoomStateRequest) returns (UpdateRoomStateResponse);
+
+    rpc StartMatch (StartMatchRequest) returns (StartMatchResponse);
 }
 
 message Room {
@@ -46,4 +48,13 @@ message UpdateRoomStateRequest {
 
 message UpdateRoomStateResponse {
     repeated Room rooms = 1;
+}
+
+message StartMatchRequest {
+    int32 room_id = 1;
+}
+
+message StartMatchResponse {
+    repeated Room rooms = 1;
+    bool started = 2;
 }
