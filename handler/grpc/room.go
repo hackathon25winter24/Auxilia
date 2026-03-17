@@ -141,7 +141,7 @@ func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*p
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-	}else if !errors.Is(err, domain.ErrMatchStarted) &&
+	}else if {!errors.Is(err, domain.ErrMatchStarted) &&
 			 !errors.Is(err, domain.ErrNotAllUsersReady) && 
 			 !errors.Is(err, domain.ErrPlayerSlotsNotFilled) {
 			return nil, status.Error(codes.Internal, err.Error())
