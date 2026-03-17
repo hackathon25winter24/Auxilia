@@ -14,13 +14,13 @@ message RoomMatch {
     int32 room_id = 1;
     string room_name = 2;
     string owner_id = 3;
-    bool is_private = 4;
+    bool is_gaming = 4;
 }
 
 message CreateRoomMatchRequest {
     string room_name = 1;
     string owner_id = 2;
-    bool is_private = 3;
+    bool is_gaming = 3;
 }
 
 message RoomMatchResponse {

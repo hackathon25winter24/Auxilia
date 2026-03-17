@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	cfgpkg "auxilia/config"
 	"auxilia/domain/model" // 追加
@@ -33,6 +33,31 @@ func main() {
 	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
 	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
 
+	// room_matches の is_private を is_gaming に移行し、既存値はすべて false に揃える
+	migratedFromIsPrivate := false
+	hasIsPrivate := db.Migrator().HasColumn(&model.RoomMatch{}, "is_private")
+	hasIsGaming := db.Migrator().HasColumn(&model.RoomMatch{}, "is_gaming")
+
+	if hasIsPrivate && !hasIsGaming {
+		if err := db.Migrator().RenameColumn(&model.RoomMatch{}, "is_private", "is_gaming"); err != nil {
+			log.Fatalf("failed to rename column is_private -> is_gaming: %v", err)
+		}
+		migratedFromIsPrivate = true
+	}
+
+	if hasIsPrivate && hasIsGaming {
+		if err := db.Migrator().DropColumn(&model.RoomMatch{}, "is_private"); err != nil {
+			log.Printf("warning: failed to drop legacy column is_private: %v", err)
+		}
+		migratedFromIsPrivate = true
+	}
+
+	if migratedFromIsPrivate {
+		if err := db.Model(&model.RoomMatch{}).Update("is_gaming", false).Error; err != nil {
+			log.Fatalf("failed to reset is_gaming values: %v", err)
+		}
+	}
+
 	// gRPCサーバーの作成
 	s := grpc.NewServer()
 
@@ -46,15 +71,15 @@ func main() {
 	roomMatchHandler := handlergrpc.NewRoomMatchServer(roomMatchRepo)
 	pb.RegisterRoomMatchServiceServer(s, roomMatchHandler)
 
-	// Roomサービスの設定を追加
-	roomRepo := gorm.NewRoomRepository(db)
-	roomHandler := handlergrpc.NewRoomHandler(roomRepo)
-	pb.RegisterRoomServiceServer(s, roomHandler)
-
-	// ★ 修正点2: Gameサービスの設定を追加
+	// Gameサービスの設定を追加
 	gameRepo := gorm.NewBattleRepository(db)
 	gameHandler := handlergrpc.NewBattleHandler(gameRepo)
 	pb.RegisterBattleServiceServer(s, gameHandler)
+
+	// Roomサービスの設定を追加
+	roomRepo := gorm.NewRoomRepository(db)
+	roomHandler := handlergrpc.NewRoomHandler(roomRepo, gameRepo)
+	pb.RegisterRoomServiceServer(s, roomHandler)
 
 	reflection.Register(s)
 

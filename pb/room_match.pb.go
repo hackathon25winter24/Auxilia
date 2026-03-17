@@ -26,7 +26,7 @@ type RoomMatch struct {
 	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
 	RoomName      string                 `protobuf:"bytes,2,opt,name=room_name,json=roomName,proto3" json:"room_name,omitempty"`
 	OwnerId       string                 `protobuf:"bytes,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	IsPrivate     bool                   `protobuf:"varint,4,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
+	IsGaming      bool                   `protobuf:"varint,4,opt,name=is_gaming,json=isGaming,proto3" json:"is_gaming,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -82,9 +82,9 @@ func (x *RoomMatch) GetOwnerId() string {
 	return ""
 }
 
-func (x *RoomMatch) GetIsPrivate() bool {
+func (x *RoomMatch) GetIsGaming() bool {
 	if x != nil {
-		return x.IsPrivate
+		return x.IsGaming
 	}
 	return false
 }
@@ -93,7 +93,7 @@ type CreateRoomMatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomName      string                 `protobuf:"bytes,1,opt,name=room_name,json=roomName,proto3" json:"room_name,omitempty"`
 	OwnerId       string                 `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	IsPrivate     bool                   `protobuf:"varint,3,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
+	IsGaming      bool                   `protobuf:"varint,3,opt,name=is_gaming,json=isGaming,proto3" json:"is_gaming,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -142,9 +142,9 @@ func (x *CreateRoomMatchRequest) GetOwnerId() string {
 	return ""
 }
 
-func (x *CreateRoomMatchRequest) GetIsPrivate() bool {
+func (x *CreateRoomMatchRequest) GetIsGaming() bool {
 	if x != nil {
-		return x.IsPrivate
+		return x.IsGaming
 	}
 	return false
 }
@@ -277,18 +277,16 @@ var File_room_match_proto protoreflect.FileDescriptor
 
 const file_room_match_proto_rawDesc = "" +
 	"\n" +
-	"\x10room_match.proto\x12\troommatch\"{\n" +
+	"\x10room_match.proto\x12\troommatch\"y\n" +
 	"\tRoomMatch\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x1b\n" +
 	"\troom_name\x18\x02 \x01(\tR\broomName\x12\x19\n" +
-	"\bowner_id\x18\x03 \x01(\tR\aownerId\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x04 \x01(\bR\tisPrivate\"o\n" +
+	"\bowner_id\x18\x03 \x01(\tR\aownerId\x12\x1b\n" +
+	"\tis_gaming\x18\x04 \x01(\bR\bisGaming\"m\n" +
 	"\x16CreateRoomMatchRequest\x12\x1b\n" +
 	"\troom_name\x18\x01 \x01(\tR\broomName\x12\x19\n" +
-	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x03 \x01(\bR\tisPrivate\"=\n" +
+	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
+	"\tis_gaming\x18\x03 \x01(\bR\bisGaming\"=\n" +
 	"\x11RoomMatchResponse\x12(\n" +
 	"\x04room\x18\x01 \x01(\v2\x14.roommatch.RoomMatchR\x04room\"\x16\n" +
 	"\x14ListRoomMatchRequest\"C\n" +

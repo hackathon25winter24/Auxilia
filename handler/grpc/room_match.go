@@ -32,9 +32,9 @@ func (s *RoomMatchServer) CreateRoomMatch(ctx context.Context, req *pb.CreateRoo
 	}
 
 	room := &model.RoomMatch{
-		RoomName:  req.RoomName,
-		OwnerID:   req.OwnerId,
-		IsPrivate: req.IsPrivate,
+		RoomName: req.RoomName,
+		OwnerID:  req.OwnerId,
+		IsGaming: false,
 	}
 
 	err := s.repo.CreateRoomMatch(room)
@@ -44,10 +44,10 @@ func (s *RoomMatchServer) CreateRoomMatch(ctx context.Context, req *pb.CreateRoo
 
 	return &pb.RoomMatchResponse{
 		Room: &pb.RoomMatch{
-			RoomId:    int32(room.ID),
-			RoomName:  room.RoomName,
-			OwnerId:   room.OwnerID,
-			IsPrivate: room.IsPrivate,
+			RoomId:   int32(room.ID),
+			RoomName: room.RoomName,
+			OwnerId:  room.OwnerID,
+			IsGaming: room.IsGaming,
 		},
 	}, nil
 }
@@ -63,10 +63,10 @@ func (s *RoomMatchServer) ListRoomMatch(ctx context.Context, req *pb.ListRoomMat
 	var pbRooms []*pb.RoomMatch
 	for _, r := range rooms {
 		pbRooms = append(pbRooms, &pb.RoomMatch{
-			RoomId:    int32(r.ID),
-			RoomName:  r.RoomName,
-			OwnerId:   r.OwnerID,
-			IsPrivate: r.IsPrivate,
+			RoomId:   int32(r.ID),
+			RoomName: r.RoomName,
+			OwnerId:  r.OwnerID,
+			IsGaming: r.IsGaming,
 		})
 	}
 
