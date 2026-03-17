@@ -59,16 +59,26 @@ message UpdateUserRequest {
   string name = 2;
   string password = 3;
   int32 story = 4;
-  int32 numWins = 5;
-  int32 numBattles = 6;
+  int32 num_wins = 5;
+  int32 num_battles = 6;
+  int32 rate = 7;
+  int32 home_character_id = 8;
+  int32 deck1 = 9; // 初期値は-1で、未設定を表します。
+  int32 deck2 = 10;
+  int32 deck3 = 11;
 }
 
 message UserResponse {
   string id = 1;
   string name = 2;
   int32 story = 3;
-  int32 numWins = 4;
-  int32 numBattles = 5;
+  int32 num_wins = 4;
+  int32 num_battles = 5;
+  int32 rate = 6;
+  int32 home_character_id = 7;
+  int32 deck1 = 8;
+  int32 deck2 = 9;
+  int32 deck3 = 10;
 }
 
 message DeleteUserRequest {
