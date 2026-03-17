@@ -33,6 +33,7 @@ message PlayerAction {
   oneof action {
     MoveAction move = 3;
     bool end_turn = 4;
+    AttackAction attack = 5;
   }
 }
 
@@ -40,6 +41,16 @@ message MoveAction {
   uint32 character_unique_id = 1;
   uint32 to_x = 2;
   uint32 to_y = 3;
+}
+
+message AttackAction {
+  uint32 attacker_character_unique_id = 1;
+  int32 attack_type = 2; // 0..3
+  bool is_started = 3;
+  uint32 base_hp1 = 4;
+  uint32 base_hp2 = 5;
+  uint32 attacked_character_unique_id = 6; // 攻撃対象キャラのユニークID
+  uint32 new_hp = 7;                        // フロント計算済みの攻撃後HP
 }
 
 // 試合情報全体のレスポンス
@@ -54,6 +65,9 @@ message GameDataResponse {
   bool is_1p_turn = 8;
   google.protobuf.Timestamp turn_start_at = 9;
   repeated UniqueCharacter characters = 10;
+  bool is_finished = 11;
+  string winner_player_id = 12;
+  google.protobuf.Timestamp finished_at = 13;
 }
 
 message UniqueCharacter {
@@ -64,6 +78,7 @@ message UniqueCharacter {
   uint32 position_x = 5;
   uint32 position_y = 6;
   repeated CharacterCondition conditions = 7;
+  bool is_selected = 8;
 }
 
 message CharacterCondition {

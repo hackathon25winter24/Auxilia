@@ -31,7 +31,7 @@ func main() {
 
 	// ★ 修正点1: 必要な全モデルをマイグレーション対象に追加
 	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
-	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{})
+	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{}, &model.AttackInfo{})
 
 	// room_matches の is_private を is_gaming に移行し、既存値はすべて false に揃える
 	migratedFromIsPrivate := false
@@ -55,6 +55,22 @@ func main() {
 	if migratedFromIsPrivate {
 		if err := db.Model(&model.RoomMatch{}).Update("is_gaming", false).Error; err != nil {
 			log.Fatalf("failed to reset is_gaming values: %v", err)
+		}
+	}
+
+	// game_data の is1_p_turn を is_1p_turn に移行
+	hasOldIs1PTurn := db.Migrator().HasColumn(&model.GameData{}, "is1_p_turn")
+	hasNewIs1PTurn := db.Migrator().HasColumn(&model.GameData{}, "is_1p_turn")
+
+	if hasOldIs1PTurn && !hasNewIs1PTurn {
+		if err := db.Migrator().RenameColumn(&model.GameData{}, "is1_p_turn", "is_1p_turn"); err != nil {
+			log.Fatalf("failed to rename column is1_p_turn -> is_1p_turn: %v", err)
+		}
+	}
+
+	if hasOldIs1PTurn && hasNewIs1PTurn {
+		if err := db.Migrator().DropColumn(&model.GameData{}, "is1_p_turn"); err != nil {
+			log.Printf("warning: failed to drop legacy column is1_p_turn: %v", err)
 		}
 	}
 
