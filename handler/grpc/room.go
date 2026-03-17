@@ -110,29 +110,29 @@ func (h *RoomHandler) EnterRing(ctx context.Context, req *pb.EnterRingRequest) (
 }
 
 func (h *RoomHandler) LeaveRing(ctx context.Context, req *pb.LeaveRingRequest) (*pb.LeaveRingResponse, error) {
-    if err := h.repo.LeaveRing(req.RoomId, req.UserId); err != nil {
+	if err := h.repo.LeaveRing(req.RoomId, req.UserId); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-    response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
-    if err != nil {
-        return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving ring: %v", err)
-    }
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving ring: %v", err)
+	}
 
-    return &pb.LeaveRingResponse{
-        Rooms: response.Rooms,
-    }, nil
+	return &pb.LeaveRingResponse{
+		Rooms: response.Rooms,
+	}, nil
 }
 
 func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*pb.SetReadyResponse, error) {
-    if err := h.repo.SetReady(ctx, req.RoomId, req.UserId, req.Ready); err != nil {
+	if err := h.repo.SetReady(ctx, req.RoomId, req.UserId, req.Ready); err != nil {
 
-        if errors.Is(err, domain.ErrSpectatorCannotReady) {
-            return nil, status.Error(codes.FailedPrecondition, "spectator cannot ready")
-        }
+		if errors.Is(err, domain.ErrSpectatorCannotReady) {
+			return nil, status.Error(codes.FailedPrecondition, "spectator cannot ready")
+		}
 
-        return nil, status.Error(codes.Internal, err.Error())
-    }
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	// 試合開始チェック
 	p1, p2, err := h.repo.StartMatch(ctx, req.RoomId)
@@ -141,21 +141,20 @@ func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*p
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-	}else if {!errors.Is(err, domain.ErrMatchStarted) &&
-			 !errors.Is(err, domain.ErrNotAllUsersReady) && 
-			 !errors.Is(err, domain.ErrPlayerSlotsNotFilled) {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+	} else if !errors.Is(err, domain.ErrMatchStarted) &&
+		!errors.Is(err, domain.ErrNotAllUsersReady) &&
+		!errors.Is(err, domain.ErrPlayerSlotsNotFilled) {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-    response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
-    if err != nil {
-        return nil, status.Errorf(codes.Internal, "failed to list rooms after ready change: %v", err)
-    }
+	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list rooms after ready change: %v", err)
+	}
 
-    return &pb.SetReadyResponse{
-        Rooms: response.Rooms,
-    }, nil
+	return &pb.SetReadyResponse{
+		Rooms: response.Rooms,
+	}, nil
 }
 
 func (h *RoomHandler) UpdateRoomState(ctx context.Context, req *pb.UpdateRoomStateRequest) (*pb.UpdateRoomStateResponse, error) {
@@ -196,7 +195,7 @@ func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest)
 		return nil, status.Errorf(codes.Internal, "failed to start match: %v", err)
 	}
 
-	gameData, err := h.battleRepo.CreateGame(uint32(req.RoomId), p1ID, p2ID)
+	_, err = h.battleRepo.CreateGame(uint32(req.RoomId), p1ID, p2ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create game: %v", err)
 	}
@@ -207,8 +206,7 @@ func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest)
 	}
 
 	return &pb.StartMatchResponse{
-		Rooms:    response.Rooms,
-		Started:  true,
-		GameData: convertToResponse(gameData),
+		Rooms:   response.Rooms,
+		Started: true,
 	}, nil
 }

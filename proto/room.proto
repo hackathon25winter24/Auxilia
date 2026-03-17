@@ -4,8 +4,6 @@ package room;
 
 option go_package = "auxilia/pb";
 
-import "proto/game.proto";
-
 service RoomService {
     rpc JoinRoom (JoinRoomRequest) returns (JoinRoomResponse);
 
@@ -104,5 +102,4 @@ message StartMatchRequest {
 message StartMatchResponse {
     repeated Room rooms = 1;
     bool started = 2;
-    game.network.GameDataResponse game_data = 3;
 }
