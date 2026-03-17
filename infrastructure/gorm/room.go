@@ -157,7 +157,7 @@ func (r *RoomRepository) EnterRing(roomID int32, userID string) error {
 		}
 
 		// 2. 1P2Pの存在チェック
-		var players [] model.Room
+		var players []model.Room
 		if err := tx.Where("room_id = ? AND state IN (?, ?)", roomID, model.StatePlayer1, model.StatePlayer2).Find(&players).Error; err != nil {
 			return err
 		}
@@ -241,7 +241,7 @@ func (r *RoomRepository) LeaveRing(roomID int32, userID string) error {
 	})
 }
 
-func (r *RoomRepository) SetReady(roomID int32, userID string, ready bool) error {
+func (r *RoomRepository) SetReady(ctx context.Context, roomID int32, userID string, ready bool) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 
 		// 1. 同IDのRoomMatchをロック
@@ -267,55 +267,48 @@ func (r *RoomRepository) SetReady(roomID int32, userID string, ready bool) error
 			Update("is_ready", ready).Error; err != nil {
 			return err
 		}
-	/*
-		// 5. 1P2Pのis_readyチェック
-		var count int64
-		if err := tx.Where("room_id = ? AND state IN (?, ?) AND is_ready = ?", 
-			roomID, model.StatePlayer1, model.StatePlayer2, true).
-			Count(&count).Error; err != nil {
-				return err
-			}
-
-		// 6. ゲーム二重開始バグを防ぐため試合が始まっているかを確認
-		var roomMatch model.RoomMatch
-		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
-			return err
-		}
-
-		if count == 2 && !roomMatch.IsGaming {
-			if err := tx.Model(&model.RoomMatch{}).Where("id = ?", roomID).Update("is_gaming", true).Error; err != nil {
-				return err
-			}
-			// ここにゲーム開始処理
-
-		}
-	*/
 
 		return nil
 	})
 }
 
 func (r *RoomRepository) UpdateRoomState(ctx context.Context, roomID int32, userID string, state int32, isReady bool) error {
-	result := r.db.WithContext(ctx).
-		Model(&model.Room{}).
-		Where("room_id = ? AND user_id = ?", roomID, userID).
-		Updates(map[string]any{
-			"state":    state,
-			"is_ready": isReady,
-		})
+	return r.db.Transaction(func(tx *gorm.DB) error {
 
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return domain.ErrRoomNotFound
-	}
-	return nil
+		// 1. 同IDのRoomMatchをロック
+		var roomLock model.RoomMatch
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
+			return err
+		}
+		result := tx.WithContext(ctx).
+			Model(&model.Room{}).
+			Where("room_id = ? AND user_id = ?", roomID, userID).
+			Updates(map[string]any{
+				"state":    state,
+				"is_ready": isReady,
+			})
+
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return domain.ErrRoomNotFound
+		}
+
+		return nil
+	})
 }
 
 func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) (string, string, error) {
 	var p1ID, p2ID string
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+
+		// 1. 同IDのRoomMatchをロック
+		var roomLock model.RoomMatch
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
+			return err
+		}
+
 		var roomMatch model.RoomMatch
 		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -339,14 +332,17 @@ func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) (string, 
 		hasPlayer1 := false
 		hasPlayer2 := false
 		for _, room := range rooms {
-			if !room.IsReady {
-				return domain.ErrNotAllUsersReady
-			}
 			if room.State == model.StatePlayer1 {
+				if !room.IsReady {
+					return domain.ErrNotAllUsersReady
+				}
 				hasPlayer1 = true
 				p1ID = room.UserID
 			}
 			if room.State == model.StatePlayer2 {
+				if !room.IsReady {
+					return domain.ErrNotAllUsersReady
+				}
 				hasPlayer2 = true
 				p2ID = room.UserID
 			}

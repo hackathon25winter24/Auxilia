@@ -125,7 +125,7 @@ func (h *RoomHandler) LeaveRing(ctx context.Context, req *pb.LeaveRingRequest) (
 }
 
 func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*pb.SetReadyResponse, error) {
-    if err := h.repo.SetReady(req.RoomId, req.UserId, req.Ready); err != nil {
+    if err := h.repo.SetReady(ctx, req.RoomId, req.UserId, req.Ready); err != nil {
 
         if errors.Is(err, domain.ErrSpectatorCannotReady) {
             return nil, status.Error(codes.FailedPrecondition, "spectator cannot ready")
@@ -133,6 +133,20 @@ func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*p
 
         return nil, status.Error(codes.Internal, err.Error())
     }
+
+	// 試合開始チェック
+	p1, p2, err := h.repo.StartMatch(ctx, req.RoomId)
+	if err == nil {
+		_, err = h.battleRepo.CreateGame(uint32(req.RoomId), p1, p2)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}else if !errors.Is(err, domain.ErrMatchStarted) &&
+			 !errors.Is(err, domain.ErrNotAllUsersReady) && 
+			 !errors.Is(err, domain.ErrPlayerSlotsNotFilled) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
 
     response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
     if err != nil {
