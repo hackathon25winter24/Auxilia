@@ -30,7 +30,14 @@ func NewRoomHandler(repo repo.RoomRepository, battleRepo repo.BattleRepository) 
 	return &RoomHandler{repo: repo, battleRepo: battleRepo}
 }
 
-func (h *RoomHandler) StreamRoom(req *pb.RoomStreamRequest, stream pb.RoomService_StreamRoomServer) error {
+func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
+	log.Println("[StreamRoom] New connection, waiting for initial Recv...")
+	req, err := stream.Recv()
+	if err != nil {
+		log.Printf("[StreamRoom] Error on initial Recv: %v", err)
+		return err
+	}
+
 	roomID := req.RoomId
 	log.Printf("[StreamRoom] Client connected to room %d (user: %s)", roomID, req.UserId)
 
@@ -53,23 +60,35 @@ func (h *RoomHandler) StreamRoom(req *pb.RoomStreamRequest, stream pb.RoomServic
 	}()
 
 	// 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
-	response, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
-	if err != nil {
-		log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, err)
+	// ※ stream.Context() はストリーム固有のコンテキストでDBクエリが失敗するため、context.Background() を使用
+	rooms, listErr := h.repo.ListRoom(context.Background(), roomID)
+	if listErr != nil {
+		log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, listErr)
 	} else {
-		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(response.Rooms))
-		if sendErr := stream.Send(response); sendErr != nil {
+		var pbRooms []*pb.Room
+		for _, r := range rooms {
+			pbRooms = append(pbRooms, &pb.Room{
+				RoomId:   r.RoomID,
+				UserId:   r.UserID,
+				State:    r.State,
+				IsReady:  r.IsReady,
+				JoinedAt: r.JoinedAt.Format(time.RFC3339),
+			})
+		}
+		initialResp := &pb.ListRoomResponse{Rooms: pbRooms}
+		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(initialResp.Rooms))
+		if sendErr := stream.Send(initialResp); sendErr != nil {
 			log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
 		} else {
 			log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
 		}
 	}
 
-	// サーバー・ストリームでは以下の1行を置くことで、「クライアントから切断されるまで無限待機」させます。
+	// クライアントから切断されるまで無限待機
 	<-stream.Context().Done()
-	
+
 	log.Printf("[StreamRoom] Context.Done() reached for room %d", roomID)
-	return nil // 終了（一番上の defer 関数が呼ばれてリストから自分が削除される）
+	return nil
 }
 
 func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomResponse) {
