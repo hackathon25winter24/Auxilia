@@ -3,7 +3,6 @@ package handlergrpc
 import (
 	"context"
 	"errors"
-	"io"
 	"log"
 	"sync"
 	"time"
