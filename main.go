@@ -16,6 +16,8 @@ import (
 	httpserver "auxilia/handler/http"
 	gorm "auxilia/infrastructure/gorm"
 	"auxilia/pb"
+
+	"time"
 )
 
 func main() {
@@ -99,6 +101,14 @@ func main() {
 
 	reflection.Register(s)
 
+	go func() {
+			ticker := time.NewTicker(1 * time.Minute) // 1分おきにチェック
+			for range ticker.C {
+					// 3分以上動きがない（joined_atが古い）待機ユーザーを削除
+					roomRepo.TimeoutLeavers(180) 
+			}
+	}()
+
 	// --- 以下、既存のハイブリッドサーバー設定（変更なし） ---
 	httpHandler := httpserver.NewHandler(s)
 
@@ -122,3 +132,4 @@ func main() {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
+

@@ -9,6 +9,8 @@ import (
 
 	"auxilia/domain"
 	"auxilia/domain/model"
+
+	"time"
 )
 
 type RoomRepository struct {
@@ -357,4 +359,12 @@ func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) (string, 
 			Update("is_gaming", true).Error
 	})
 	return p1ID, p2ID, err
+}
+
+func (r *RoomRepository) TimeoutLeavers(timeoutSeconds int) error {
+	threshold := time.Now().Add(time.Duration(-timeoutSeconds) * time.Second)
+
+	err := r.db.Where("joined_at < ? AND state = ?", threshold, 0).
+		Delete(&model.Room{}).Error
+	return err
 }
