@@ -90,11 +90,11 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		res.Characters = append(res.Characters, char)
 	}
 
-	for _, cell := range m.Cells {
-		res.Cells = append(res.Cells, &pb.CellInfo{
-			PositionX: uint32(cell.PositionX),
-			PositionY: uint32(cell.PositionY),
-			CellType:  cell.CellType,
+	for _, grid := range m.Grids {
+		res.Grids = append(res.Grids, &pb.GridInfo{
+			PositionX: uint32(grid.PositionX),
+			PositionY: uint32(grid.PositionY),
+			GridType:  grid.GridType,
 		})
 	}
 

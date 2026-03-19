@@ -69,13 +69,13 @@ message GameDataResponse {
   string winner_player_id = 12;
   google.protobuf.Timestamp finished_at = 13;
   repeated AttackInfo attack_infos = 14;
-  repeated CellInfo cells = 15;
+  repeated GridInfo grids = 15;
 }
 
-message CellInfo {
+message GridInfo {
   uint32 position_x = 1;
   uint32 position_y = 2;
-  int32 cell_type = 3;
+  int32 grid_type = 3;
 }
 
 message UniqueCharacter {

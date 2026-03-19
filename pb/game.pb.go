@@ -367,7 +367,7 @@ type GameDataResponse struct {
 	WinnerPlayerId string                 `protobuf:"bytes,12,opt,name=winner_player_id,json=winnerPlayerId,proto3" json:"winner_player_id,omitempty"`
 	FinishedAt     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
 	AttackInfos    []*AttackInfo          `protobuf:"bytes,14,rep,name=attack_infos,json=attackInfos,proto3" json:"attack_infos,omitempty"`
-	Cells          []*CellInfo            `protobuf:"bytes,15,rep,name=cells,proto3" json:"cells,omitempty"`
+	Grids          []*GridInfo            `protobuf:"bytes,15,rep,name=grids,proto3" json:"grids,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -500,36 +500,36 @@ func (x *GameDataResponse) GetAttackInfos() []*AttackInfo {
 	return nil
 }
 
-func (x *GameDataResponse) GetCells() []*CellInfo {
+func (x *GameDataResponse) GetGrids() []*GridInfo {
 	if x != nil {
-		return x.Cells
+		return x.Grids
 	}
 	return nil
 }
 
-type CellInfo struct {
+type GridInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PositionX     uint32                 `protobuf:"varint,1,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
 	PositionY     uint32                 `protobuf:"varint,2,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
-	CellType      int32                  `protobuf:"varint,3,opt,name=cell_type,json=cellType,proto3" json:"cell_type,omitempty"`
+	GridType      int32                  `protobuf:"varint,3,opt,name=grid_type,json=gridType,proto3" json:"grid_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CellInfo) Reset() {
-	*x = CellInfo{}
+func (x *GridInfo) Reset() {
+	*x = GridInfo{}
 	mi := &file_game_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CellInfo) String() string {
+func (x *GridInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CellInfo) ProtoMessage() {}
+func (*GridInfo) ProtoMessage() {}
 
-func (x *CellInfo) ProtoReflect() protoreflect.Message {
+func (x *GridInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_game_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -541,28 +541,28 @@ func (x *CellInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CellInfo.ProtoReflect.Descriptor instead.
-func (*CellInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use GridInfo.ProtoReflect.Descriptor instead.
+func (*GridInfo) Descriptor() ([]byte, []int) {
 	return file_game_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *CellInfo) GetPositionX() uint32 {
+func (x *GridInfo) GetPositionX() uint32 {
 	if x != nil {
 		return x.PositionX
 	}
 	return 0
 }
 
-func (x *CellInfo) GetPositionY() uint32 {
+func (x *GridInfo) GetPositionY() uint32 {
 	if x != nil {
 		return x.PositionY
 	}
 	return 0
 }
 
-func (x *CellInfo) GetCellType() int32 {
+func (x *GridInfo) GetGridType() int32 {
 	if x != nil {
-		return x.CellType
+		return x.GridType
 	}
 	return 0
 }
@@ -1024,13 +1024,13 @@ const file_game_proto_rawDesc = "" +
 	"\vfinished_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishedAt\x12;\n" +
 	"\fattack_infos\x18\x0e \x03(\v2\x18.game.network.AttackInfoR\vattackInfos\x12,\n" +
-	"\x05cells\x18\x0f \x03(\v2\x16.game.network.CellInfoR\x05cells\"e\n" +
-	"\bCellInfo\x12\x1d\n" +
+	"\x05grids\x18\x0f \x03(\v2\x16.game.network.GridInfoR\x05grids\"e\n" +
+	"\bGridInfo\x12\x1d\n" +
 	"\n" +
 	"position_x\x18\x01 \x01(\rR\tpositionX\x12\x1d\n" +
 	"\n" +
 	"position_y\x18\x02 \x01(\rR\tpositionY\x12\x1b\n" +
-	"\tcell_type\x18\x03 \x01(\x05R\bcellType\"\x8a\x02\n" +
+	"\tgrid_type\x18\x03 \x01(\x05R\bgridType\"\x8a\x02\n" +
 	"\x0fUniqueCharacter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12!\n" +
 	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\x12\x13\n" +
@@ -1097,7 +1097,7 @@ var file_game_proto_goTypes = []any{
 	(*MoveAction)(nil),                 // 2: game.network.MoveAction
 	(*AttackAction)(nil),               // 3: game.network.AttackAction
 	(*GameDataResponse)(nil),           // 4: game.network.GameDataResponse
-	(*CellInfo)(nil),                   // 5: game.network.CellInfo
+	(*GridInfo)(nil),                   // 5: game.network.GridInfo
 	(*UniqueCharacter)(nil),            // 6: game.network.UniqueCharacter
 	(*CharacterCondition)(nil),         // 7: game.network.CharacterCondition
 	(*AttackInfo)(nil),                 // 8: game.network.AttackInfo
@@ -1113,7 +1113,7 @@ var file_game_proto_depIdxs = []int32{
 	6,  // 3: game.network.GameDataResponse.characters:type_name -> game.network.UniqueCharacter
 	12, // 4: game.network.GameDataResponse.finished_at:type_name -> google.protobuf.Timestamp
 	8,  // 5: game.network.GameDataResponse.attack_infos:type_name -> game.network.AttackInfo
-	5,  // 6: game.network.GameDataResponse.cells:type_name -> game.network.CellInfo
+	5,  // 6: game.network.GameDataResponse.grids:type_name -> game.network.GridInfo
 	7,  // 7: game.network.UniqueCharacter.conditions:type_name -> game.network.CharacterCondition
 	12, // 8: game.network.AttackInfo.attacked_at:type_name -> google.protobuf.Timestamp
 	6,  // 9: game.network.RegisterCharactersResponse.registered_characters:type_name -> game.network.UniqueCharacter
