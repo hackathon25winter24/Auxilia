@@ -57,6 +57,12 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 		roomLobbyStreamsMu.Unlock()
 	}()
 
+	// 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
+	response, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
+	if err == nil {
+		_ = stream.Send(response)
+	}
+
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
@@ -64,6 +70,12 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 		}
 		if err != nil {
 			return err
+		}
+
+		// クライアントからメッセージ（更新要求など）を受信した際にもSendを返す
+		resp, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
+		if err == nil {
+			h.broadcastToRoom(roomID, resp)
 		}
 	}
 }
