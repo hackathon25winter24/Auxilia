@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -128,16 +130,8 @@ func (h *BattleHandler) RegisterCharacters(ctx context.Context, req *pb.Register
 	}, nil
 }
 
-func (h *BattleHandler) StreamGame(stream pb.BattleService_StreamGameServer) error {
-	// 最初のアクションでroomIDを取得しストリーム登録
-	action, err := stream.Recv()
-	if err == io.EOF {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	roomID := action.RoomId
+func (h *BattleHandler) StreamGame(req *pb.StreamGameRequest, stream pb.BattleService_StreamGameServer) error {
+	roomID := req.RoomId
 
 	roomStreamsMu.Lock()
 	roomStreams[roomID] = append(roomStreams[roomID], stream)
@@ -155,74 +149,86 @@ func (h *BattleHandler) StreamGame(stream pb.BattleService_StreamGameServer) err
 		roomStreamsMu.Unlock()
 	}()
 
-	for {
-		// 2回目以降のアクション受信
-		if action == nil {
-			action, err = stream.Recv()
-			if err == io.EOF {
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-		}
-
-		var gameData *model.GameData
-		var attackInfo *model.AttackInfo
-		var sendErr error
-
-		switch a := action.GetAction().(type) {
-		case *pb.PlayerAction_Move:
-			if a.Move == nil {
-				action = nil
-				continue
-			}
-			gameData, sendErr = h.repo.ApplyMove(action.RoomId, action.PlayerId, a.Move.CharacterUniqueId, a.Move.ToX, a.Move.ToY)
-		case *pb.PlayerAction_Attack:
-			if a.Attack == nil {
-				action = nil
-				continue
-			}
-			gameData, attackInfo, sendErr = h.repo.ApplyAttack(action.RoomId, action.PlayerId, a.Attack.AttackerCharacterUniqueId, a.Attack.AttackType, a.Attack.IsStarted, a.Attack.BaseHp1, a.Attack.BaseHp2, a.Attack.AttackedCharacterUniqueId, a.Attack.NewHp)
-		case *pb.PlayerAction_EndTurn:
-			if !a.EndTurn {
-				action = nil
-				continue
-			}
-			gameData, sendErr = h.repo.EndTurn(action.RoomId)
-		default:
-			gameData, sendErr = h.repo.GetGameDataByRoomID(action.RoomId)
-		}
-
-		if sendErr != nil {
-			// エラーは呼び出し元ストリームだけに返す
-			return sendErr
-		}
-
-		resp := convertToResponse(gameData)
-
-		if attackInfo != nil {
-			resp.AttackInfos = []*pb.AttackInfo{
-				{
-					Id:                  uint32(attackInfo.ID),
-					RoomId:              uint32(attackInfo.RoomID),
-					AttackerSide:        attackInfo.AttackerSide,
-					IsStarted:           attackInfo.IsStarted,
-					AttackerCharacterId: uint32(*attackInfo.AttackerCharacterID),
-					AttackType:          attackInfo.AttackType,
-					AttackedAt:          timestamppb.New(attackInfo.AttackedAt),
-				},
-			}
-		}
-
-		// 部屋内全ストリームに送信
-		roomStreamsMu.Lock()
-		streams := roomStreams[roomID]
-		roomStreamsMu.Unlock()
-		for _, s := range streams {
-			s.Send(resp)
-		}
-
-		action = nil
+	// 初回接続時の情報送信（現在のステータスを即座に返す）
+	gameData, err := h.repo.GetGameDataByRoomID(roomID)
+	if err == nil {
+		stream.Send(convertToResponse(gameData))
 	}
+
+	// クライアントから切断されるまで待機
+	<-stream.Context().Done()
+	return nil
+}
+
+func (h *BattleHandler) broadcastToGame(roomID uint32, response *pb.GameDataResponse) {
+	roomStreamsMu.Lock()
+	streams := roomStreams[roomID]
+	roomStreamsMu.Unlock()
+
+	for _, s := range streams {
+		if err := s.Send(response); err != nil {
+			log.Printf("[broadcastToGame] Error sending to stream: %v", err)
+		}
+	}
+}
+
+func (h *BattleHandler) ApplyMove(ctx context.Context, req *pb.PlayerAction) (*pb.GameDataResponse, error) {
+	move := req.GetMove()
+	if move == nil {
+		return nil, status.Error(codes.InvalidArgument, "move is required")
+	}
+
+	gameData, err := h.repo.ApplyMove(req.RoomId, req.PlayerId, move.CharacterUniqueId, move.ToX, move.ToY)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := convertToResponse(gameData)
+	h.broadcastToGame(req.RoomId, resp)
+	return resp, nil
+}
+
+func (h *BattleHandler) ApplyAttack(ctx context.Context, req *pb.PlayerAction) (*pb.GameDataResponse, error) {
+	attack := req.GetAttack()
+	if attack == nil {
+		return nil, status.Error(codes.InvalidArgument, "attack is required")
+	}
+
+	gameData, attackInfo, err := h.repo.ApplyAttack(req.RoomId, req.PlayerId, attack.AttackerCharacterUniqueId, attack.AttackType, attack.IsStarted, attack.BaseHp1, attack.BaseHp2, attack.AttackedCharacterUniqueId, attack.NewHp)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := convertToResponse(gameData)
+	if attackInfo != nil {
+		resp.AttackInfos = []*pb.AttackInfo{
+			{
+				Id:                  uint32(attackInfo.ID),
+				RoomId:              uint32(attackInfo.RoomID),
+				AttackerSide:        attackInfo.AttackerSide,
+				IsStarted:           attackInfo.IsStarted,
+				AttackerCharacterId: uint32(*attackInfo.AttackerCharacterID),
+				AttackType:          attackInfo.AttackType,
+				AttackedAt:          timestamppb.New(attackInfo.AttackedAt),
+			},
+		}
+	}
+
+	h.broadcastToGame(req.RoomId, resp)
+	return resp, nil
+}
+
+func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.PlayerAction) (*pb.GameDataResponse, error) {
+	if !req.GetEndTurn() {
+		return nil, status.Error(codes.InvalidArgument, "end_turn must be true")
+	}
+
+	gameData, err := h.repo.EndTurn(req.RoomId)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := convertToResponse(gameData)
+	h.broadcastToGame(req.RoomId, resp)
+	return resp, nil
 }
