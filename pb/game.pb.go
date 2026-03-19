@@ -368,6 +368,8 @@ type GameDataResponse struct {
 	FinishedAt     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
 	AttackInfos    []*AttackInfo          `protobuf:"bytes,14,rep,name=attack_infos,json=attackInfos,proto3" json:"attack_infos,omitempty"`
 	Grids          []*GridInfo            `protobuf:"bytes,15,rep,name=grids,proto3" json:"grids,omitempty"`
+	Cost_1P        uint32                 `protobuf:"varint,16,opt,name=cost_1p,json=cost1p,proto3" json:"cost_1p,omitempty"`
+	Cost_2P        uint32                 `protobuf:"varint,17,opt,name=cost_2p,json=cost2p,proto3" json:"cost_2p,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -505,6 +507,20 @@ func (x *GameDataResponse) GetGrids() []*GridInfo {
 		return x.Grids
 	}
 	return nil
+}
+
+func (x *GameDataResponse) GetCost_1P() uint32 {
+	if x != nil {
+		return x.Cost_1P
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetCost_2P() uint32 {
+	if x != nil {
+		return x.Cost_2P
+	}
+	return 0
 }
 
 type GridInfo struct {
@@ -1000,7 +1016,7 @@ const file_game_proto_rawDesc = "" +
 	"\bbase_hp1\x18\x04 \x01(\rR\abaseHp1\x12\x19\n" +
 	"\bbase_hp2\x18\x05 \x01(\rR\abaseHp2\x12?\n" +
 	"\x1cattacked_character_unique_id\x18\x06 \x01(\rR\x19attackedCharacterUniqueId\x12\x15\n" +
-	"\x06new_hp\x18\a \x01(\rR\x05newHp\"\xd3\x04\n" +
+	"\x06new_hp\x18\a \x01(\rR\x05newHp\"\x85\x05\n" +
 	"\x10GameDataResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
 	"\aroom_id\x18\x02 \x01(\rR\x06roomId\x12\x1d\n" +
@@ -1024,7 +1040,9 @@ const file_game_proto_rawDesc = "" +
 	"\vfinished_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishedAt\x12;\n" +
 	"\fattack_infos\x18\x0e \x03(\v2\x18.game.network.AttackInfoR\vattackInfos\x12,\n" +
-	"\x05grids\x18\x0f \x03(\v2\x16.game.network.GridInfoR\x05grids\"e\n" +
+	"\x05grids\x18\x0f \x03(\v2\x16.game.network.GridInfoR\x05grids\x12\x17\n" +
+	"\acost_1p\x18\x10 \x01(\rR\x06cost1p\x12\x17\n" +
+	"\acost_2p\x18\x11 \x01(\rR\x06cost2p\"e\n" +
 	"\bGridInfo\x12\x1d\n" +
 	"\n" +
 	"position_x\x18\x01 \x01(\rR\tpositionX\x12\x1d\n" +

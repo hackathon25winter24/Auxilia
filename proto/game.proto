@@ -70,6 +70,8 @@ message GameDataResponse {
   google.protobuf.Timestamp finished_at = 13;
   repeated AttackInfo attack_infos = 14;
   repeated GridInfo grids = 15;
+  uint32 cost_1p = 16;
+  uint32 cost_2p = 17;
 }
 
 message GridInfo {

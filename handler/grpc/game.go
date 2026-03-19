@@ -57,6 +57,8 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		Player2Id:   m.Player2ID,
 		BaseHp1:     uint32(m.BaseHP1),
 		BaseHp2:     uint32(m.BaseHP2),
+		Cost_1P:     uint32(m.Cost1P),
+		Cost_2P:     uint32(m.Cost2P),
 		Turn:        uint32(m.Turn),
 		Is_1PTurn:   m.Is1PTurn,
 		TurnStartAt: timestamppb.New(m.TurnStartAt),
