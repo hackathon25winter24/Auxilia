@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"sync"
 	"time"
 
@@ -31,18 +32,23 @@ func NewRoomHandler(repo repo.RoomRepository, battleRepo repo.BattleRepository) 
 }
 
 func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
+	log.Println("[StreamRoom] New connection, waiting for initial Recv...")
 	req, err := stream.Recv()
 	if err == io.EOF {
+		log.Println("[StreamRoom] EOF on initial Recv")
 		return nil
 	}
 	if err != nil {
+		log.Printf("[StreamRoom] Error on initial Recv: %v", err)
 		return err
 	}
 
 	roomID := req.RoomId
+	log.Printf("[StreamRoom] Client connected to room %d (user: %s)", roomID, req.UserId)
 
 	roomLobbyStreamsMu.Lock()
 	roomLobbyStreams[roomID] = append(roomLobbyStreams[roomID], stream)
+	log.Printf("[StreamRoom] Room %d now has %d stream(s)", roomID, len(roomLobbyStreams[roomID]))
 	roomLobbyStreamsMu.Unlock()
 
 	defer func() {
@@ -54,24 +60,35 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 				break
 			}
 		}
+		log.Printf("[StreamRoom] Client disconnected from room %d, remaining streams: %d", roomID, len(roomLobbyStreams[roomID]))
 		roomLobbyStreamsMu.Unlock()
 	}()
 
 	// 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
 	response, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
-	if err == nil {
-		_ = stream.Send(response)
+	if err != nil {
+		log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, err)
+	} else {
+		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(response.Rooms))
+		if sendErr := stream.Send(response); sendErr != nil {
+			log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
+		} else {
+			log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
+		}
 	}
 
 	for {
 		_, err := stream.Recv()
 		if err == io.EOF {
+			log.Printf("[StreamRoom] EOF in loop for room %d", roomID)
 			return nil
 		}
 		if err != nil {
+			log.Printf("[StreamRoom] Error in loop for room %d: %v", roomID, err)
 			return err
 		}
 
+		log.Printf("[StreamRoom] Received message in loop for room %d, broadcasting...", roomID)
 		// クライアントからメッセージ（更新要求など）を受信した際にもSendを返す
 		resp, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
 		if err == nil {
@@ -84,8 +101,11 @@ func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomRespons
 	roomLobbyStreamsMu.Lock()
 	streams := roomLobbyStreams[roomID]
 	roomLobbyStreamsMu.Unlock()
-	for _, s := range streams {
-		_ = s.Send(response)
+	log.Printf("[broadcastToRoom] Broadcasting to room %d: %d stream(s), %d room(s) in response", roomID, len(streams), len(response.Rooms))
+	for i, s := range streams {
+		if err := s.Send(response); err != nil {
+			log.Printf("[broadcastToRoom] Error sending to stream %d in room %d: %v", i, roomID, err)
+		}
 	}
 }
 
