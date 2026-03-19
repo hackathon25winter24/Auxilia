@@ -36,6 +36,18 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		// Characters は空の状態で開始
 	}
 
+	var cells []model.Cell
+	for x := uint(0); x < 8; x++ {
+		for y := uint(0); y < 5; y++ {
+			cells = append(cells, model.Cell{
+				PositionX: x,
+				PositionY: y,
+				CellType:  0,
+			})
+		}
+	}
+	gameData.Cells = cells
+
 	// キャラクター登録がないため、シンプルな Create で実装可能
 	if err := r.db.Create(gameData).Error; err != nil {
 		return nil, err
@@ -57,7 +69,7 @@ func (r *BattleRepository) loadGameDataByRoomID(roomID uint32) (*model.GameData,
 	var gameData model.GameData
 
 	// PreloadでCharactersとそのConditionsまで再帰的に取得
-	err := r.db.Preload("Characters.Conditions").
+	err := r.db.Preload("Characters.Conditions").Preload("Cells").
 		Where("room_id = ?", roomID).
 		First(&gameData).Error
 
