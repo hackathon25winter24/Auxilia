@@ -5,7 +5,7 @@ import (
 	"auxilia/domain/model" // プロジェクト構造に合わせて調整してください
 	"auxilia/pb"
 	"context"
-	"io"
+	"log"
 	"sync"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
