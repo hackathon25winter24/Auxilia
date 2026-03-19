@@ -163,7 +163,9 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 	return r.GetGameDataByRoomID(roomID)
 }
 
-func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32) (*model.GameData, error) {
+func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32) (*model.GameData, *model.AttackInfo, error) {
+	var createdAttackInfo *model.AttackInfo
+
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -224,6 +226,7 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		if err := tx.Create(&attackInfo).Error; err != nil {
 			return err
 		}
+		createdAttackInfo = &attackInfo
 
 		if err := tx.Model(&model.UniqueCharacter{}).
 			Where("id = ?", character.ID).
@@ -251,10 +254,11 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return r.GetGameDataByRoomID(roomID)
+	gameData, err := r.GetGameDataByRoomID(roomID)
+	return gameData, createdAttackInfo, err
 }
 
 func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
