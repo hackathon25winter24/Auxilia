@@ -20,6 +20,14 @@ service RoomService {
     rpc UpdateRoomState (UpdateRoomStateRequest) returns (UpdateRoomStateResponse);
 
     rpc StartMatch (StartMatchRequest) returns (StartMatchResponse);
+
+    // ルーム内のリアルタイム同期（入室時のStream接続用）
+    rpc StreamRoom (stream RoomStreamRequest) returns (stream ListRoomResponse);
+}
+
+message RoomStreamRequest {
+    int32 room_id = 1;
+    string user_id = 2;
 }
 
 message Room {

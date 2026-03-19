@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v6.33.4
-// source: proto/room.proto
+// source: room.proto
 
 package pb
 
@@ -27,6 +27,7 @@ const (
 	RoomService_SetReady_FullMethodName        = "/room.RoomService/SetReady"
 	RoomService_UpdateRoomState_FullMethodName = "/room.RoomService/UpdateRoomState"
 	RoomService_StartMatch_FullMethodName      = "/room.RoomService/StartMatch"
+	RoomService_StreamRoom_FullMethodName      = "/room.RoomService/StreamRoom"
 )
 
 // RoomServiceClient is the client API for RoomService service.
@@ -41,6 +42,8 @@ type RoomServiceClient interface {
 	SetReady(ctx context.Context, in *SetReadyRequest, opts ...grpc.CallOption) (*SetReadyResponse, error)
 	UpdateRoomState(ctx context.Context, in *UpdateRoomStateRequest, opts ...grpc.CallOption) (*UpdateRoomStateResponse, error)
 	StartMatch(ctx context.Context, in *StartMatchRequest, opts ...grpc.CallOption) (*StartMatchResponse, error)
+	// ルーム内のリアルタイム同期（入室時のStream接続用）
+	StreamRoom(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[RoomStreamRequest, ListRoomResponse], error)
 }
 
 type roomServiceClient struct {
@@ -131,6 +134,19 @@ func (c *roomServiceClient) StartMatch(ctx context.Context, in *StartMatchReques
 	return out, nil
 }
 
+func (c *roomServiceClient) StreamRoom(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[RoomStreamRequest, ListRoomResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &RoomService_ServiceDesc.Streams[0], RoomService_StreamRoom_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[RoomStreamRequest, ListRoomResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RoomService_StreamRoomClient = grpc.BidiStreamingClient[RoomStreamRequest, ListRoomResponse]
+
 // RoomServiceServer is the server API for RoomService service.
 // All implementations must embed UnimplementedRoomServiceServer
 // for forward compatibility.
@@ -143,6 +159,8 @@ type RoomServiceServer interface {
 	SetReady(context.Context, *SetReadyRequest) (*SetReadyResponse, error)
 	UpdateRoomState(context.Context, *UpdateRoomStateRequest) (*UpdateRoomStateResponse, error)
 	StartMatch(context.Context, *StartMatchRequest) (*StartMatchResponse, error)
+	// ルーム内のリアルタイム同期（入室時のStream接続用）
+	StreamRoom(grpc.BidiStreamingServer[RoomStreamRequest, ListRoomResponse]) error
 	mustEmbedUnimplementedRoomServiceServer()
 }
 
@@ -176,6 +194,9 @@ func (UnimplementedRoomServiceServer) UpdateRoomState(context.Context, *UpdateRo
 }
 func (UnimplementedRoomServiceServer) StartMatch(context.Context, *StartMatchRequest) (*StartMatchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartMatch not implemented")
+}
+func (UnimplementedRoomServiceServer) StreamRoom(grpc.BidiStreamingServer[RoomStreamRequest, ListRoomResponse]) error {
+	return status.Error(codes.Unimplemented, "method StreamRoom not implemented")
 }
 func (UnimplementedRoomServiceServer) mustEmbedUnimplementedRoomServiceServer() {}
 func (UnimplementedRoomServiceServer) testEmbeddedByValue()                     {}
@@ -342,6 +363,13 @@ func _RoomService_StartMatch_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_StreamRoom_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RoomServiceServer).StreamRoom(&grpc.GenericServerStream[RoomStreamRequest, ListRoomResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RoomService_StreamRoomServer = grpc.BidiStreamingServer[RoomStreamRequest, ListRoomResponse]
+
 // RoomService_ServiceDesc is the grpc.ServiceDesc for RoomService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -382,6 +410,13 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RoomService_StartMatch_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/room.proto",
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamRoom",
+			Handler:       _RoomService_StreamRoom_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "room.proto",
 }

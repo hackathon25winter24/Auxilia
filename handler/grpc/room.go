@@ -3,6 +3,8 @@ package handlergrpc
 import (
 	"context"
 	"errors"
+	"io"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -13,6 +15,11 @@ import (
 	"auxilia/pb"
 )
 
+var (
+	roomLobbyStreams   = make(map[int32][]pb.RoomService_StreamRoomServer)
+	roomLobbyStreamsMu sync.Mutex
+)
+
 type RoomHandler struct {
 	pb.UnimplementedRoomServiceServer
 	repo       repo.RoomRepository
@@ -21,6 +28,53 @@ type RoomHandler struct {
 
 func NewRoomHandler(repo repo.RoomRepository, battleRepo repo.BattleRepository) *RoomHandler {
 	return &RoomHandler{repo: repo, battleRepo: battleRepo}
+}
+
+func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
+	req, err := stream.Recv()
+	if err == io.EOF {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	roomID := req.RoomId
+
+	roomLobbyStreamsMu.Lock()
+	roomLobbyStreams[roomID] = append(roomLobbyStreams[roomID], stream)
+	roomLobbyStreamsMu.Unlock()
+
+	defer func() {
+		roomLobbyStreamsMu.Lock()
+		streams := roomLobbyStreams[roomID]
+		for i, s := range streams {
+			if s == stream {
+				roomLobbyStreams[roomID] = append(streams[:i], streams[i+1:]...)
+				break
+			}
+		}
+		roomLobbyStreamsMu.Unlock()
+	}()
+
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+	}
+}
+
+func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomResponse) {
+	roomLobbyStreamsMu.Lock()
+	streams := roomLobbyStreams[roomID]
+	roomLobbyStreamsMu.Unlock()
+	for _, s := range streams {
+		_ = s.Send(response)
+	}
 }
 
 func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
@@ -44,6 +98,8 @@ func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*p
 		return nil, status.Errorf(codes.Internal, "failed to list rooms after joining: %v", err)
 	}
 
+	h.broadcastToRoom(req.RoomId, response)
+
 	return &pb.JoinRoomResponse{
 		Rooms: response.Rooms,
 	}, nil
@@ -59,6 +115,8 @@ func (h *RoomHandler) LeaveRoom(ctx context.Context, req *pb.LeaveRoomRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving: %v", err)
 	}
+
+	h.broadcastToRoom(req.RoomId, response)
 
 	return &pb.LeaveRoomResponse{
 		Rooms: response.Rooms,
@@ -104,6 +162,8 @@ func (h *RoomHandler) EnterRing(ctx context.Context, req *pb.EnterRingRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to list rooms after entering ring: %v", err)
 	}
 
+	h.broadcastToRoom(req.RoomId, response)
+
 	return &pb.EnterRingResponse{
 		Rooms: response.Rooms,
 	}, nil
@@ -118,6 +178,8 @@ func (h *RoomHandler) LeaveRing(ctx context.Context, req *pb.LeaveRingRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list rooms after leaving ring: %v", err)
 	}
+
+	h.broadcastToRoom(req.RoomId, response)
 
 	return &pb.LeaveRingResponse{
 		Rooms: response.Rooms,
@@ -152,6 +214,8 @@ func (h *RoomHandler) SetReady(ctx context.Context, req *pb.SetReadyRequest) (*p
 		return nil, status.Errorf(codes.Internal, "failed to list rooms after ready change: %v", err)
 	}
 
+	h.broadcastToRoom(req.RoomId, response)
+
 	return &pb.SetReadyResponse{
 		Rooms: response.Rooms,
 	}, nil
@@ -176,6 +240,8 @@ func (h *RoomHandler) UpdateRoomState(ctx context.Context, req *pb.UpdateRoomSta
 	if err != nil {
 		return nil, err
 	}
+
+	h.broadcastToRoom(req.RoomId, response)
 
 	return &pb.UpdateRoomStateResponse{Rooms: response.Rooms}, nil
 }
@@ -204,6 +270,8 @@ func (h *RoomHandler) StartMatch(ctx context.Context, req *pb.StartMatchRequest)
 	if err != nil {
 		return nil, err
 	}
+
+	h.broadcastToRoom(req.RoomId, response)
 
 	return &pb.StartMatchResponse{
 		Rooms:   response.Rooms,
