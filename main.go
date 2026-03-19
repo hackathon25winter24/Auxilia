@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
+
 	cfgpkg "auxilia/config"
 	"auxilia/domain/model" // 追加
 	handlergrpc "auxilia/handler/grpc"
@@ -111,12 +113,26 @@ func main() {
 	// --- 以下、既存のハイブリッドサーバー設定（変更なし） ---
 	httpHandler := httpserver.NewHandler(s)
 
+	// grpc-web 対応のラッパーで包む
+	wrappedGrpc := grpcweb.WrapServer(
+		s,
+		grpcweb.WithOriginFunc(func(origin string) bool { return true }), // 全てのアクセス元のCORSを許可
+	)
+
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Unityからの通信（gRPC-Web特有の通信）ならラッパーに処理させる
+		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) {
+			wrappedGrpc.ServeHTTP(w, r)
+			return
+		}
+
+		// ただの生のgRPC通信ならそのまま標準に流す
 		contentType := r.Header.Get("Content-Type")
 		if r.ProtoMajor == 2 && strings.HasPrefix(contentType, "application/grpc") {
 			s.ServeHTTP(w, r)
 			return
 		}
+		
 		httpHandler.ServeHTTP(w, r)
 	})
 

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.4
-// source: proto/room.proto
+// source: room.proto
 
 package pb
 
@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type RoomStreamRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoomStreamRequest) Reset() {
+	*x = RoomStreamRequest{}
+	mi := &file_room_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoomStreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomStreamRequest) ProtoMessage() {}
+
+func (x *RoomStreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomStreamRequest.ProtoReflect.Descriptor instead.
+func (*RoomStreamRequest) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RoomStreamRequest) GetRoomId() int32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *RoomStreamRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 type Room struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
@@ -34,7 +86,7 @@ type Room struct {
 
 func (x *Room) Reset() {
 	*x = Room{}
-	mi := &file_proto_room_proto_msgTypes[0]
+	mi := &file_room_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +98,7 @@ func (x *Room) String() string {
 func (*Room) ProtoMessage() {}
 
 func (x *Room) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[0]
+	mi := &file_room_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +111,7 @@ func (x *Room) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Room.ProtoReflect.Descriptor instead.
 func (*Room) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{0}
+	return file_room_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Room) GetRoomId() int32 {
@@ -107,7 +159,7 @@ type JoinRoomRequest struct {
 
 func (x *JoinRoomRequest) Reset() {
 	*x = JoinRoomRequest{}
-	mi := &file_proto_room_proto_msgTypes[1]
+	mi := &file_room_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -119,7 +171,7 @@ func (x *JoinRoomRequest) String() string {
 func (*JoinRoomRequest) ProtoMessage() {}
 
 func (x *JoinRoomRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[1]
+	mi := &file_room_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -132,7 +184,7 @@ func (x *JoinRoomRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinRoomRequest.ProtoReflect.Descriptor instead.
 func (*JoinRoomRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{1}
+	return file_room_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *JoinRoomRequest) GetRoomId() int32 {
@@ -158,7 +210,7 @@ type JoinRoomResponse struct {
 
 func (x *JoinRoomResponse) Reset() {
 	*x = JoinRoomResponse{}
-	mi := &file_proto_room_proto_msgTypes[2]
+	mi := &file_room_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +222,7 @@ func (x *JoinRoomResponse) String() string {
 func (*JoinRoomResponse) ProtoMessage() {}
 
 func (x *JoinRoomResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[2]
+	mi := &file_room_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +235,7 @@ func (x *JoinRoomResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinRoomResponse.ProtoReflect.Descriptor instead.
 func (*JoinRoomResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{2}
+	return file_room_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *JoinRoomResponse) GetRooms() []*Room {
@@ -203,7 +255,7 @@ type LeaveRoomRequest struct {
 
 func (x *LeaveRoomRequest) Reset() {
 	*x = LeaveRoomRequest{}
-	mi := &file_proto_room_proto_msgTypes[3]
+	mi := &file_room_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +267,7 @@ func (x *LeaveRoomRequest) String() string {
 func (*LeaveRoomRequest) ProtoMessage() {}
 
 func (x *LeaveRoomRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[3]
+	mi := &file_room_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +280,7 @@ func (x *LeaveRoomRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveRoomRequest.ProtoReflect.Descriptor instead.
 func (*LeaveRoomRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{3}
+	return file_room_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *LeaveRoomRequest) GetRoomId() int32 {
@@ -254,7 +306,7 @@ type LeaveRoomResponse struct {
 
 func (x *LeaveRoomResponse) Reset() {
 	*x = LeaveRoomResponse{}
-	mi := &file_proto_room_proto_msgTypes[4]
+	mi := &file_room_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -266,7 +318,7 @@ func (x *LeaveRoomResponse) String() string {
 func (*LeaveRoomResponse) ProtoMessage() {}
 
 func (x *LeaveRoomResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[4]
+	mi := &file_room_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -279,7 +331,7 @@ func (x *LeaveRoomResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveRoomResponse.ProtoReflect.Descriptor instead.
 func (*LeaveRoomResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{4}
+	return file_room_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *LeaveRoomResponse) GetRooms() []*Room {
@@ -298,7 +350,7 @@ type ListRoomRequest struct {
 
 func (x *ListRoomRequest) Reset() {
 	*x = ListRoomRequest{}
-	mi := &file_proto_room_proto_msgTypes[5]
+	mi := &file_room_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -310,7 +362,7 @@ func (x *ListRoomRequest) String() string {
 func (*ListRoomRequest) ProtoMessage() {}
 
 func (x *ListRoomRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[5]
+	mi := &file_room_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -323,7 +375,7 @@ func (x *ListRoomRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRoomRequest.ProtoReflect.Descriptor instead.
 func (*ListRoomRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{5}
+	return file_room_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListRoomRequest) GetRoomId() int32 {
@@ -342,7 +394,7 @@ type ListRoomResponse struct {
 
 func (x *ListRoomResponse) Reset() {
 	*x = ListRoomResponse{}
-	mi := &file_proto_room_proto_msgTypes[6]
+	mi := &file_room_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +406,7 @@ func (x *ListRoomResponse) String() string {
 func (*ListRoomResponse) ProtoMessage() {}
 
 func (x *ListRoomResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[6]
+	mi := &file_room_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +419,7 @@ func (x *ListRoomResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRoomResponse.ProtoReflect.Descriptor instead.
 func (*ListRoomResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{6}
+	return file_room_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListRoomResponse) GetRooms() []*Room {
@@ -387,7 +439,7 @@ type EnterRingRequest struct {
 
 func (x *EnterRingRequest) Reset() {
 	*x = EnterRingRequest{}
-	mi := &file_proto_room_proto_msgTypes[7]
+	mi := &file_room_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -399,7 +451,7 @@ func (x *EnterRingRequest) String() string {
 func (*EnterRingRequest) ProtoMessage() {}
 
 func (x *EnterRingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[7]
+	mi := &file_room_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -412,7 +464,7 @@ func (x *EnterRingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnterRingRequest.ProtoReflect.Descriptor instead.
 func (*EnterRingRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{7}
+	return file_room_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *EnterRingRequest) GetRoomId() int32 {
@@ -438,7 +490,7 @@ type EnterRingResponse struct {
 
 func (x *EnterRingResponse) Reset() {
 	*x = EnterRingResponse{}
-	mi := &file_proto_room_proto_msgTypes[8]
+	mi := &file_room_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +502,7 @@ func (x *EnterRingResponse) String() string {
 func (*EnterRingResponse) ProtoMessage() {}
 
 func (x *EnterRingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[8]
+	mi := &file_room_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +515,7 @@ func (x *EnterRingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnterRingResponse.ProtoReflect.Descriptor instead.
 func (*EnterRingResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{8}
+	return file_room_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EnterRingResponse) GetRooms() []*Room {
@@ -483,7 +535,7 @@ type LeaveRingRequest struct {
 
 func (x *LeaveRingRequest) Reset() {
 	*x = LeaveRingRequest{}
-	mi := &file_proto_room_proto_msgTypes[9]
+	mi := &file_room_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -495,7 +547,7 @@ func (x *LeaveRingRequest) String() string {
 func (*LeaveRingRequest) ProtoMessage() {}
 
 func (x *LeaveRingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[9]
+	mi := &file_room_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -508,7 +560,7 @@ func (x *LeaveRingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveRingRequest.ProtoReflect.Descriptor instead.
 func (*LeaveRingRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{9}
+	return file_room_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *LeaveRingRequest) GetRoomId() int32 {
@@ -534,7 +586,7 @@ type LeaveRingResponse struct {
 
 func (x *LeaveRingResponse) Reset() {
 	*x = LeaveRingResponse{}
-	mi := &file_proto_room_proto_msgTypes[10]
+	mi := &file_room_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -546,7 +598,7 @@ func (x *LeaveRingResponse) String() string {
 func (*LeaveRingResponse) ProtoMessage() {}
 
 func (x *LeaveRingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[10]
+	mi := &file_room_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,7 +611,7 @@ func (x *LeaveRingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveRingResponse.ProtoReflect.Descriptor instead.
 func (*LeaveRingResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{10}
+	return file_room_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *LeaveRingResponse) GetRooms() []*Room {
@@ -580,7 +632,7 @@ type SetReadyRequest struct {
 
 func (x *SetReadyRequest) Reset() {
 	*x = SetReadyRequest{}
-	mi := &file_proto_room_proto_msgTypes[11]
+	mi := &file_room_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -592,7 +644,7 @@ func (x *SetReadyRequest) String() string {
 func (*SetReadyRequest) ProtoMessage() {}
 
 func (x *SetReadyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[11]
+	mi := &file_room_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +657,7 @@ func (x *SetReadyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetReadyRequest.ProtoReflect.Descriptor instead.
 func (*SetReadyRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{11}
+	return file_room_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SetReadyRequest) GetRoomId() int32 {
@@ -638,7 +690,7 @@ type SetReadyResponse struct {
 
 func (x *SetReadyResponse) Reset() {
 	*x = SetReadyResponse{}
-	mi := &file_proto_room_proto_msgTypes[12]
+	mi := &file_room_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -650,7 +702,7 @@ func (x *SetReadyResponse) String() string {
 func (*SetReadyResponse) ProtoMessage() {}
 
 func (x *SetReadyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[12]
+	mi := &file_room_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -663,7 +715,7 @@ func (x *SetReadyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetReadyResponse.ProtoReflect.Descriptor instead.
 func (*SetReadyResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{12}
+	return file_room_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SetReadyResponse) GetRooms() []*Room {
@@ -685,7 +737,7 @@ type UpdateRoomStateRequest struct {
 
 func (x *UpdateRoomStateRequest) Reset() {
 	*x = UpdateRoomStateRequest{}
-	mi := &file_proto_room_proto_msgTypes[13]
+	mi := &file_room_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -697,7 +749,7 @@ func (x *UpdateRoomStateRequest) String() string {
 func (*UpdateRoomStateRequest) ProtoMessage() {}
 
 func (x *UpdateRoomStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[13]
+	mi := &file_room_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -710,7 +762,7 @@ func (x *UpdateRoomStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoomStateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRoomStateRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{13}
+	return file_room_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UpdateRoomStateRequest) GetRoomId() int32 {
@@ -750,7 +802,7 @@ type UpdateRoomStateResponse struct {
 
 func (x *UpdateRoomStateResponse) Reset() {
 	*x = UpdateRoomStateResponse{}
-	mi := &file_proto_room_proto_msgTypes[14]
+	mi := &file_room_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -762,7 +814,7 @@ func (x *UpdateRoomStateResponse) String() string {
 func (*UpdateRoomStateResponse) ProtoMessage() {}
 
 func (x *UpdateRoomStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[14]
+	mi := &file_room_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -775,7 +827,7 @@ func (x *UpdateRoomStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoomStateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRoomStateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{14}
+	return file_room_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateRoomStateResponse) GetRooms() []*Room {
@@ -794,7 +846,7 @@ type StartMatchRequest struct {
 
 func (x *StartMatchRequest) Reset() {
 	*x = StartMatchRequest{}
-	mi := &file_proto_room_proto_msgTypes[15]
+	mi := &file_room_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -806,7 +858,7 @@ func (x *StartMatchRequest) String() string {
 func (*StartMatchRequest) ProtoMessage() {}
 
 func (x *StartMatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[15]
+	mi := &file_room_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -819,7 +871,7 @@ func (x *StartMatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartMatchRequest.ProtoReflect.Descriptor instead.
 func (*StartMatchRequest) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{15}
+	return file_room_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *StartMatchRequest) GetRoomId() int32 {
@@ -839,7 +891,7 @@ type StartMatchResponse struct {
 
 func (x *StartMatchResponse) Reset() {
 	*x = StartMatchResponse{}
-	mi := &file_proto_room_proto_msgTypes[16]
+	mi := &file_room_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -851,7 +903,7 @@ func (x *StartMatchResponse) String() string {
 func (*StartMatchResponse) ProtoMessage() {}
 
 func (x *StartMatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_room_proto_msgTypes[16]
+	mi := &file_room_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -864,7 +916,7 @@ func (x *StartMatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartMatchResponse.ProtoReflect.Descriptor instead.
 func (*StartMatchResponse) Descriptor() ([]byte, []int) {
-	return file_proto_room_proto_rawDescGZIP(), []int{16}
+	return file_room_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *StartMatchResponse) GetRooms() []*Room {
@@ -881,11 +933,15 @@ func (x *StartMatchResponse) GetStarted() bool {
 	return false
 }
 
-var File_proto_room_proto protoreflect.FileDescriptor
+var File_room_proto protoreflect.FileDescriptor
 
-const file_proto_room_proto_rawDesc = "" +
+const file_room_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/room.proto\x12\x04room\"\x86\x01\n" +
+	"\n" +
+	"room.proto\x12\x04room\"E\n" +
+	"\x11RoomStreamRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x86\x01\n" +
 	"\x04Room\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
@@ -941,7 +997,7 @@ const file_proto_room_proto_rawDesc = "" +
 	"\x12StartMatchResponse\x12 \n" +
 	"\x05rooms\x18\x01 \x03(\v2\n" +
 	".room.RoomR\x05rooms\x12\x18\n" +
-	"\astarted\x18\x02 \x01(\bR\astarted2\x89\x04\n" +
+	"\astarted\x18\x02 \x01(\bR\astarted2\xcc\x04\n" +
 	"\vRoomService\x129\n" +
 	"\bJoinRoom\x12\x15.room.JoinRoomRequest\x1a\x16.room.JoinRoomResponse\x12<\n" +
 	"\tLeaveRoom\x12\x16.room.LeaveRoomRequest\x1a\x17.room.LeaveRoomResponse\x129\n" +
@@ -951,93 +1007,98 @@ const file_proto_room_proto_rawDesc = "" +
 	"\bSetReady\x12\x15.room.SetReadyRequest\x1a\x16.room.SetReadyResponse\x12N\n" +
 	"\x0fUpdateRoomState\x12\x1c.room.UpdateRoomStateRequest\x1a\x1d.room.UpdateRoomStateResponse\x12?\n" +
 	"\n" +
-	"StartMatch\x12\x17.room.StartMatchRequest\x1a\x18.room.StartMatchResponseB\fZ\n" +
+	"StartMatch\x12\x17.room.StartMatchRequest\x1a\x18.room.StartMatchResponse\x12A\n" +
+	"\n" +
+	"StreamRoom\x12\x17.room.RoomStreamRequest\x1a\x16.room.ListRoomResponse(\x010\x01B\fZ\n" +
 	"auxilia/pbb\x06proto3"
 
 var (
-	file_proto_room_proto_rawDescOnce sync.Once
-	file_proto_room_proto_rawDescData []byte
+	file_room_proto_rawDescOnce sync.Once
+	file_room_proto_rawDescData []byte
 )
 
-func file_proto_room_proto_rawDescGZIP() []byte {
-	file_proto_room_proto_rawDescOnce.Do(func() {
-		file_proto_room_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_room_proto_rawDesc), len(file_proto_room_proto_rawDesc)))
+func file_room_proto_rawDescGZIP() []byte {
+	file_room_proto_rawDescOnce.Do(func() {
+		file_room_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_room_proto_rawDesc), len(file_room_proto_rawDesc)))
 	})
-	return file_proto_room_proto_rawDescData
+	return file_room_proto_rawDescData
 }
 
-var file_proto_room_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
-var file_proto_room_proto_goTypes = []any{
-	(*Room)(nil),                    // 0: room.Room
-	(*JoinRoomRequest)(nil),         // 1: room.JoinRoomRequest
-	(*JoinRoomResponse)(nil),        // 2: room.JoinRoomResponse
-	(*LeaveRoomRequest)(nil),        // 3: room.LeaveRoomRequest
-	(*LeaveRoomResponse)(nil),       // 4: room.LeaveRoomResponse
-	(*ListRoomRequest)(nil),         // 5: room.ListRoomRequest
-	(*ListRoomResponse)(nil),        // 6: room.ListRoomResponse
-	(*EnterRingRequest)(nil),        // 7: room.EnterRingRequest
-	(*EnterRingResponse)(nil),       // 8: room.EnterRingResponse
-	(*LeaveRingRequest)(nil),        // 9: room.LeaveRingRequest
-	(*LeaveRingResponse)(nil),       // 10: room.LeaveRingResponse
-	(*SetReadyRequest)(nil),         // 11: room.SetReadyRequest
-	(*SetReadyResponse)(nil),        // 12: room.SetReadyResponse
-	(*UpdateRoomStateRequest)(nil),  // 13: room.UpdateRoomStateRequest
-	(*UpdateRoomStateResponse)(nil), // 14: room.UpdateRoomStateResponse
-	(*StartMatchRequest)(nil),       // 15: room.StartMatchRequest
-	(*StartMatchResponse)(nil),      // 16: room.StartMatchResponse
+var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_room_proto_goTypes = []any{
+	(*RoomStreamRequest)(nil),       // 0: room.RoomStreamRequest
+	(*Room)(nil),                    // 1: room.Room
+	(*JoinRoomRequest)(nil),         // 2: room.JoinRoomRequest
+	(*JoinRoomResponse)(nil),        // 3: room.JoinRoomResponse
+	(*LeaveRoomRequest)(nil),        // 4: room.LeaveRoomRequest
+	(*LeaveRoomResponse)(nil),       // 5: room.LeaveRoomResponse
+	(*ListRoomRequest)(nil),         // 6: room.ListRoomRequest
+	(*ListRoomResponse)(nil),        // 7: room.ListRoomResponse
+	(*EnterRingRequest)(nil),        // 8: room.EnterRingRequest
+	(*EnterRingResponse)(nil),       // 9: room.EnterRingResponse
+	(*LeaveRingRequest)(nil),        // 10: room.LeaveRingRequest
+	(*LeaveRingResponse)(nil),       // 11: room.LeaveRingResponse
+	(*SetReadyRequest)(nil),         // 12: room.SetReadyRequest
+	(*SetReadyResponse)(nil),        // 13: room.SetReadyResponse
+	(*UpdateRoomStateRequest)(nil),  // 14: room.UpdateRoomStateRequest
+	(*UpdateRoomStateResponse)(nil), // 15: room.UpdateRoomStateResponse
+	(*StartMatchRequest)(nil),       // 16: room.StartMatchRequest
+	(*StartMatchResponse)(nil),      // 17: room.StartMatchResponse
 }
-var file_proto_room_proto_depIdxs = []int32{
-	0,  // 0: room.JoinRoomResponse.rooms:type_name -> room.Room
-	0,  // 1: room.LeaveRoomResponse.rooms:type_name -> room.Room
-	0,  // 2: room.ListRoomResponse.rooms:type_name -> room.Room
-	0,  // 3: room.EnterRingResponse.rooms:type_name -> room.Room
-	0,  // 4: room.LeaveRingResponse.rooms:type_name -> room.Room
-	0,  // 5: room.SetReadyResponse.rooms:type_name -> room.Room
-	0,  // 6: room.UpdateRoomStateResponse.rooms:type_name -> room.Room
-	0,  // 7: room.StartMatchResponse.rooms:type_name -> room.Room
-	1,  // 8: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
-	3,  // 9: room.RoomService.LeaveRoom:input_type -> room.LeaveRoomRequest
-	5,  // 10: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
-	7,  // 11: room.RoomService.EnterRing:input_type -> room.EnterRingRequest
-	9,  // 12: room.RoomService.LeaveRing:input_type -> room.LeaveRingRequest
-	11, // 13: room.RoomService.SetReady:input_type -> room.SetReadyRequest
-	13, // 14: room.RoomService.UpdateRoomState:input_type -> room.UpdateRoomStateRequest
-	15, // 15: room.RoomService.StartMatch:input_type -> room.StartMatchRequest
-	2,  // 16: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
-	4,  // 17: room.RoomService.LeaveRoom:output_type -> room.LeaveRoomResponse
-	6,  // 18: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
-	8,  // 19: room.RoomService.EnterRing:output_type -> room.EnterRingResponse
-	10, // 20: room.RoomService.LeaveRing:output_type -> room.LeaveRingResponse
-	12, // 21: room.RoomService.SetReady:output_type -> room.SetReadyResponse
-	14, // 22: room.RoomService.UpdateRoomState:output_type -> room.UpdateRoomStateResponse
-	16, // 23: room.RoomService.StartMatch:output_type -> room.StartMatchResponse
-	16, // [16:24] is the sub-list for method output_type
-	8,  // [8:16] is the sub-list for method input_type
+var file_room_proto_depIdxs = []int32{
+	1,  // 0: room.JoinRoomResponse.rooms:type_name -> room.Room
+	1,  // 1: room.LeaveRoomResponse.rooms:type_name -> room.Room
+	1,  // 2: room.ListRoomResponse.rooms:type_name -> room.Room
+	1,  // 3: room.EnterRingResponse.rooms:type_name -> room.Room
+	1,  // 4: room.LeaveRingResponse.rooms:type_name -> room.Room
+	1,  // 5: room.SetReadyResponse.rooms:type_name -> room.Room
+	1,  // 6: room.UpdateRoomStateResponse.rooms:type_name -> room.Room
+	1,  // 7: room.StartMatchResponse.rooms:type_name -> room.Room
+	2,  // 8: room.RoomService.JoinRoom:input_type -> room.JoinRoomRequest
+	4,  // 9: room.RoomService.LeaveRoom:input_type -> room.LeaveRoomRequest
+	6,  // 10: room.RoomService.ListRoom:input_type -> room.ListRoomRequest
+	8,  // 11: room.RoomService.EnterRing:input_type -> room.EnterRingRequest
+	10, // 12: room.RoomService.LeaveRing:input_type -> room.LeaveRingRequest
+	12, // 13: room.RoomService.SetReady:input_type -> room.SetReadyRequest
+	14, // 14: room.RoomService.UpdateRoomState:input_type -> room.UpdateRoomStateRequest
+	16, // 15: room.RoomService.StartMatch:input_type -> room.StartMatchRequest
+	0,  // 16: room.RoomService.StreamRoom:input_type -> room.RoomStreamRequest
+	3,  // 17: room.RoomService.JoinRoom:output_type -> room.JoinRoomResponse
+	5,  // 18: room.RoomService.LeaveRoom:output_type -> room.LeaveRoomResponse
+	7,  // 19: room.RoomService.ListRoom:output_type -> room.ListRoomResponse
+	9,  // 20: room.RoomService.EnterRing:output_type -> room.EnterRingResponse
+	11, // 21: room.RoomService.LeaveRing:output_type -> room.LeaveRingResponse
+	13, // 22: room.RoomService.SetReady:output_type -> room.SetReadyResponse
+	15, // 23: room.RoomService.UpdateRoomState:output_type -> room.UpdateRoomStateResponse
+	17, // 24: room.RoomService.StartMatch:output_type -> room.StartMatchResponse
+	7,  // 25: room.RoomService.StreamRoom:output_type -> room.ListRoomResponse
+	17, // [17:26] is the sub-list for method output_type
+	8,  // [8:17] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
 }
 
-func init() { file_proto_room_proto_init() }
-func file_proto_room_proto_init() {
-	if File_proto_room_proto != nil {
+func init() { file_room_proto_init() }
+func file_room_proto_init() {
+	if File_room_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_room_proto_rawDesc), len(file_proto_room_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_room_proto_rawDesc), len(file_room_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_room_proto_goTypes,
-		DependencyIndexes: file_proto_room_proto_depIdxs,
-		MessageInfos:      file_proto_room_proto_msgTypes,
+		GoTypes:           file_room_proto_goTypes,
+		DependencyIndexes: file_room_proto_depIdxs,
+		MessageInfos:      file_room_proto_msgTypes,
 	}.Build()
-	File_proto_room_proto = out.File
-	file_proto_room_proto_goTypes = nil
-	file_proto_room_proto_depIdxs = nil
+	File_room_proto = out.File
+	file_room_proto_goTypes = nil
+	file_room_proto_depIdxs = nil
 }

@@ -14,9 +14,14 @@ service BattleService {
   rpc GetGameData(GetGameDataRequest) returns (GameDataResponse);
   rpc RegisterCharacters(RegisterCharactersRequest) returns (RegisterCharactersResponse);
   
-  // 対戦中のアクション同期（双方向ストリーミング）
-  // 片方が動かしたら、もう片方に最新の GameDataResponse を流す
-  rpc StreamGame(stream PlayerAction) returns (stream GameDataResponse);
+  // 対戦中のアクション同期（サーバー・ストリーミング）
+  // ルームIDを指定して受信を開始する
+  rpc StreamGame(StreamGameRequest) returns (stream GameDataResponse);
+
+  // アクション送信（個別の単方向RPC）
+  rpc ApplyMove(PlayerAction) returns (GameDataResponse);
+  rpc ApplyAttack(PlayerAction) returns (GameDataResponse);
+  rpc EndTurn(PlayerAction) returns (GameDataResponse);
 }
 
 // 試合登録用リクエスト
@@ -24,6 +29,11 @@ message CreateGameRequest {
   uint32 room_id = 1;
   string player1_id = 2;
   string player2_id = 3;
+}
+
+message StreamGameRequest {
+  uint32 room_id = 1;
+  string player_id = 2;
 }
 
 // プレイヤーのアクション（移動など）
@@ -70,6 +80,8 @@ message GameDataResponse {
   google.protobuf.Timestamp finished_at = 13;
   repeated AttackInfo attack_infos = 14;
   repeated GridInfo grids = 15;
+  uint32 cost_1p = 16;
+  uint32 cost_2p = 17;
 }
 
 message GridInfo {

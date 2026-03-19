@@ -23,6 +23,9 @@ const (
 	BattleService_GetGameData_FullMethodName        = "/game.network.BattleService/GetGameData"
 	BattleService_RegisterCharacters_FullMethodName = "/game.network.BattleService/RegisterCharacters"
 	BattleService_StreamGame_FullMethodName         = "/game.network.BattleService/StreamGame"
+	BattleService_ApplyMove_FullMethodName          = "/game.network.BattleService/ApplyMove"
+	BattleService_ApplyAttack_FullMethodName        = "/game.network.BattleService/ApplyAttack"
+	BattleService_EndTurn_FullMethodName            = "/game.network.BattleService/EndTurn"
 )
 
 // BattleServiceClient is the client API for BattleService service.
@@ -34,9 +37,13 @@ type BattleServiceClient interface {
 	// 現在の試合情報の取得
 	GetGameData(ctx context.Context, in *GetGameDataRequest, opts ...grpc.CallOption) (*GameDataResponse, error)
 	RegisterCharacters(ctx context.Context, in *RegisterCharactersRequest, opts ...grpc.CallOption) (*RegisterCharactersResponse, error)
-	// 対戦中のアクション同期（双方向ストリーミング）
-	// 片方が動かしたら、もう片方に最新の GameDataResponse を流す
-	StreamGame(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PlayerAction, GameDataResponse], error)
+	// 対戦中のアクション同期（サーバー・ストリーミング）
+	// ルームIDを指定して受信を開始する
+	StreamGame(ctx context.Context, in *StreamGameRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GameDataResponse], error)
+	// アクション送信（個別の単方向RPC）
+	ApplyMove(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
+	ApplyAttack(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
+	EndTurn(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
 }
 
 type battleServiceClient struct {
@@ -77,18 +84,54 @@ func (c *battleServiceClient) RegisterCharacters(ctx context.Context, in *Regist
 	return out, nil
 }
 
-func (c *battleServiceClient) StreamGame(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PlayerAction, GameDataResponse], error) {
+func (c *battleServiceClient) StreamGame(ctx context.Context, in *StreamGameRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GameDataResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &BattleService_ServiceDesc.Streams[0], BattleService_StreamGame_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[PlayerAction, GameDataResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[StreamGameRequest, GameDataResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type BattleService_StreamGameClient = grpc.BidiStreamingClient[PlayerAction, GameDataResponse]
+type BattleService_StreamGameClient = grpc.ServerStreamingClient[GameDataResponse]
+
+func (c *battleServiceClient) ApplyMove(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GameDataResponse)
+	err := c.cc.Invoke(ctx, BattleService_ApplyMove_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *battleServiceClient) ApplyAttack(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GameDataResponse)
+	err := c.cc.Invoke(ctx, BattleService_ApplyAttack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *battleServiceClient) EndTurn(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GameDataResponse)
+	err := c.cc.Invoke(ctx, BattleService_EndTurn_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 // BattleServiceServer is the server API for BattleService service.
 // All implementations must embed UnimplementedBattleServiceServer
@@ -99,9 +142,13 @@ type BattleServiceServer interface {
 	// 現在の試合情報の取得
 	GetGameData(context.Context, *GetGameDataRequest) (*GameDataResponse, error)
 	RegisterCharacters(context.Context, *RegisterCharactersRequest) (*RegisterCharactersResponse, error)
-	// 対戦中のアクション同期（双方向ストリーミング）
-	// 片方が動かしたら、もう片方に最新の GameDataResponse を流す
-	StreamGame(grpc.BidiStreamingServer[PlayerAction, GameDataResponse]) error
+	// 対戦中のアクション同期（サーバー・ストリーミング）
+	// ルームIDを指定して受信を開始する
+	StreamGame(*StreamGameRequest, grpc.ServerStreamingServer[GameDataResponse]) error
+	// アクション送信（個別の単方向RPC）
+	ApplyMove(context.Context, *PlayerAction) (*GameDataResponse, error)
+	ApplyAttack(context.Context, *PlayerAction) (*GameDataResponse, error)
+	EndTurn(context.Context, *PlayerAction) (*GameDataResponse, error)
 	mustEmbedUnimplementedBattleServiceServer()
 }
 
@@ -121,8 +168,17 @@ func (UnimplementedBattleServiceServer) GetGameData(context.Context, *GetGameDat
 func (UnimplementedBattleServiceServer) RegisterCharacters(context.Context, *RegisterCharactersRequest) (*RegisterCharactersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RegisterCharacters not implemented")
 }
-func (UnimplementedBattleServiceServer) StreamGame(grpc.BidiStreamingServer[PlayerAction, GameDataResponse]) error {
+func (UnimplementedBattleServiceServer) StreamGame(*StreamGameRequest, grpc.ServerStreamingServer[GameDataResponse]) error {
 	return status.Error(codes.Unimplemented, "method StreamGame not implemented")
+}
+func (UnimplementedBattleServiceServer) ApplyMove(context.Context, *PlayerAction) (*GameDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyMove not implemented")
+}
+func (UnimplementedBattleServiceServer) ApplyAttack(context.Context, *PlayerAction) (*GameDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyAttack not implemented")
+}
+func (UnimplementedBattleServiceServer) EndTurn(context.Context, *PlayerAction) (*GameDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EndTurn not implemented")
 }
 func (UnimplementedBattleServiceServer) mustEmbedUnimplementedBattleServiceServer() {}
 func (UnimplementedBattleServiceServer) testEmbeddedByValue()                       {}
@@ -200,11 +256,69 @@ func _BattleService_RegisterCharacters_Handler(srv interface{}, ctx context.Cont
 }
 
 func _BattleService_StreamGame_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BattleServiceServer).StreamGame(&grpc.GenericServerStream[PlayerAction, GameDataResponse]{ServerStream: stream})
+	m := new(StreamGameRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BattleServiceServer).StreamGame(m, &grpc.GenericServerStream[StreamGameRequest, GameDataResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type BattleService_StreamGameServer = grpc.BidiStreamingServer[PlayerAction, GameDataResponse]
+type BattleService_StreamGameServer = grpc.ServerStreamingServer[GameDataResponse]
+
+func _BattleService_ApplyMove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlayerAction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).ApplyMove(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_ApplyMove_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).ApplyMove(ctx, req.(*PlayerAction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BattleService_ApplyAttack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlayerAction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).ApplyAttack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_ApplyAttack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).ApplyAttack(ctx, req.(*PlayerAction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BattleService_EndTurn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlayerAction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).EndTurn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_EndTurn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).EndTurn(ctx, req.(*PlayerAction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // BattleService_ServiceDesc is the grpc.ServiceDesc for BattleService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -225,13 +339,24 @@ var BattleService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RegisterCharacters",
 			Handler:    _BattleService_RegisterCharacters_Handler,
 		},
+		{
+			MethodName: "ApplyMove",
+			Handler:    _BattleService_ApplyMove_Handler,
+		},
+		{
+			MethodName: "ApplyAttack",
+			Handler:    _BattleService_ApplyAttack_Handler,
+		},
+		{
+			MethodName: "EndTurn",
+			Handler:    _BattleService_EndTurn_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamGame",
 			Handler:       _BattleService_StreamGame_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "game.proto",

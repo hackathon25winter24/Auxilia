@@ -12,6 +12,8 @@ type GameData struct {
 	Player2ID      string
 	BaseHP1        uint
 	BaseHP2        uint
+	Cost1P         uint
+	Cost2P         uint
 	Turn           uint
 	Is1PTurn       bool `gorm:"column:is_1p_turn"`
 	TurnStartAt    time.Time

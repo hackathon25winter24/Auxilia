@@ -83,6 +83,58 @@ func (x *CreateGameRequest) GetPlayer2Id() string {
 	return ""
 }
 
+type StreamGameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        uint32                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamGameRequest) Reset() {
+	*x = StreamGameRequest{}
+	mi := &file_game_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamGameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamGameRequest) ProtoMessage() {}
+
+func (x *StreamGameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamGameRequest.ProtoReflect.Descriptor instead.
+func (*StreamGameRequest) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *StreamGameRequest) GetRoomId() uint32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *StreamGameRequest) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
 // プレイヤーのアクション（移動など）
 type PlayerAction struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
@@ -100,7 +152,7 @@ type PlayerAction struct {
 
 func (x *PlayerAction) Reset() {
 	*x = PlayerAction{}
-	mi := &file_game_proto_msgTypes[1]
+	mi := &file_game_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -112,7 +164,7 @@ func (x *PlayerAction) String() string {
 func (*PlayerAction) ProtoMessage() {}
 
 func (x *PlayerAction) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[1]
+	mi := &file_game_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -125,7 +177,7 @@ func (x *PlayerAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerAction.ProtoReflect.Descriptor instead.
 func (*PlayerAction) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{1}
+	return file_game_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PlayerAction) GetRoomId() uint32 {
@@ -209,7 +261,7 @@ type MoveAction struct {
 
 func (x *MoveAction) Reset() {
 	*x = MoveAction{}
-	mi := &file_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -221,7 +273,7 @@ func (x *MoveAction) String() string {
 func (*MoveAction) ProtoMessage() {}
 
 func (x *MoveAction) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[2]
+	mi := &file_game_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +286,7 @@ func (x *MoveAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoveAction.ProtoReflect.Descriptor instead.
 func (*MoveAction) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{2}
+	return file_game_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *MoveAction) GetCharacterUniqueId() uint32 {
@@ -273,7 +325,7 @@ type AttackAction struct {
 
 func (x *AttackAction) Reset() {
 	*x = AttackAction{}
-	mi := &file_game_proto_msgTypes[3]
+	mi := &file_game_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -285,7 +337,7 @@ func (x *AttackAction) String() string {
 func (*AttackAction) ProtoMessage() {}
 
 func (x *AttackAction) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[3]
+	mi := &file_game_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -298,7 +350,7 @@ func (x *AttackAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttackAction.ProtoReflect.Descriptor instead.
 func (*AttackAction) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{3}
+	return file_game_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AttackAction) GetAttackerCharacterUniqueId() uint32 {
@@ -368,13 +420,15 @@ type GameDataResponse struct {
 	FinishedAt     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
 	AttackInfos    []*AttackInfo          `protobuf:"bytes,14,rep,name=attack_infos,json=attackInfos,proto3" json:"attack_infos,omitempty"`
 	Grids          []*GridInfo            `protobuf:"bytes,15,rep,name=grids,proto3" json:"grids,omitempty"`
+	Cost_1P        uint32                 `protobuf:"varint,16,opt,name=cost_1p,json=cost1p,proto3" json:"cost_1p,omitempty"`
+	Cost_2P        uint32                 `protobuf:"varint,17,opt,name=cost_2p,json=cost2p,proto3" json:"cost_2p,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *GameDataResponse) Reset() {
 	*x = GameDataResponse{}
-	mi := &file_game_proto_msgTypes[4]
+	mi := &file_game_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -386,7 +440,7 @@ func (x *GameDataResponse) String() string {
 func (*GameDataResponse) ProtoMessage() {}
 
 func (x *GameDataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[4]
+	mi := &file_game_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -399,7 +453,7 @@ func (x *GameDataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameDataResponse.ProtoReflect.Descriptor instead.
 func (*GameDataResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{4}
+	return file_game_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GameDataResponse) GetId() uint32 {
@@ -507,6 +561,20 @@ func (x *GameDataResponse) GetGrids() []*GridInfo {
 	return nil
 }
 
+func (x *GameDataResponse) GetCost_1P() uint32 {
+	if x != nil {
+		return x.Cost_1P
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetCost_2P() uint32 {
+	if x != nil {
+		return x.Cost_2P
+	}
+	return 0
+}
+
 type GridInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PositionX     uint32                 `protobuf:"varint,1,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
@@ -518,7 +586,7 @@ type GridInfo struct {
 
 func (x *GridInfo) Reset() {
 	*x = GridInfo{}
-	mi := &file_game_proto_msgTypes[5]
+	mi := &file_game_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -530,7 +598,7 @@ func (x *GridInfo) String() string {
 func (*GridInfo) ProtoMessage() {}
 
 func (x *GridInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[5]
+	mi := &file_game_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -543,7 +611,7 @@ func (x *GridInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GridInfo.ProtoReflect.Descriptor instead.
 func (*GridInfo) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{5}
+	return file_game_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GridInfo) GetPositionX() uint32 {
@@ -583,7 +651,7 @@ type UniqueCharacter struct {
 
 func (x *UniqueCharacter) Reset() {
 	*x = UniqueCharacter{}
-	mi := &file_game_proto_msgTypes[6]
+	mi := &file_game_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +663,7 @@ func (x *UniqueCharacter) String() string {
 func (*UniqueCharacter) ProtoMessage() {}
 
 func (x *UniqueCharacter) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[6]
+	mi := &file_game_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +676,7 @@ func (x *UniqueCharacter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UniqueCharacter.ProtoReflect.Descriptor instead.
 func (*UniqueCharacter) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{6}
+	return file_game_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UniqueCharacter) GetId() uint32 {
@@ -678,7 +746,7 @@ type CharacterCondition struct {
 
 func (x *CharacterCondition) Reset() {
 	*x = CharacterCondition{}
-	mi := &file_game_proto_msgTypes[7]
+	mi := &file_game_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -690,7 +758,7 @@ func (x *CharacterCondition) String() string {
 func (*CharacterCondition) ProtoMessage() {}
 
 func (x *CharacterCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[7]
+	mi := &file_game_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +771,7 @@ func (x *CharacterCondition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CharacterCondition.ProtoReflect.Descriptor instead.
 func (*CharacterCondition) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{7}
+	return file_game_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CharacterCondition) GetId() uint32 {
@@ -742,7 +810,7 @@ type AttackInfo struct {
 
 func (x *AttackInfo) Reset() {
 	*x = AttackInfo{}
-	mi := &file_game_proto_msgTypes[8]
+	mi := &file_game_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +822,7 @@ func (x *AttackInfo) String() string {
 func (*AttackInfo) ProtoMessage() {}
 
 func (x *AttackInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[8]
+	mi := &file_game_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +835,7 @@ func (x *AttackInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttackInfo.ProtoReflect.Descriptor instead.
 func (*AttackInfo) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{8}
+	return file_game_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AttackInfo) GetId() uint32 {
@@ -828,7 +896,7 @@ type GetGameDataRequest struct {
 
 func (x *GetGameDataRequest) Reset() {
 	*x = GetGameDataRequest{}
-	mi := &file_game_proto_msgTypes[9]
+	mi := &file_game_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -840,7 +908,7 @@ func (x *GetGameDataRequest) String() string {
 func (*GetGameDataRequest) ProtoMessage() {}
 
 func (x *GetGameDataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[9]
+	mi := &file_game_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -853,7 +921,7 @@ func (x *GetGameDataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGameDataRequest.ProtoReflect.Descriptor instead.
 func (*GetGameDataRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{9}
+	return file_game_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetGameDataRequest) GetRoomId() uint32 {
@@ -874,7 +942,7 @@ type RegisterCharactersRequest struct {
 
 func (x *RegisterCharactersRequest) Reset() {
 	*x = RegisterCharactersRequest{}
-	mi := &file_game_proto_msgTypes[10]
+	mi := &file_game_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -886,7 +954,7 @@ func (x *RegisterCharactersRequest) String() string {
 func (*RegisterCharactersRequest) ProtoMessage() {}
 
 func (x *RegisterCharactersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[10]
+	mi := &file_game_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -899,7 +967,7 @@ func (x *RegisterCharactersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterCharactersRequest.ProtoReflect.Descriptor instead.
 func (*RegisterCharactersRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{10}
+	return file_game_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RegisterCharactersRequest) GetRoomId() uint32 {
@@ -932,7 +1000,7 @@ type RegisterCharactersResponse struct {
 
 func (x *RegisterCharactersResponse) Reset() {
 	*x = RegisterCharactersResponse{}
-	mi := &file_game_proto_msgTypes[11]
+	mi := &file_game_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -944,7 +1012,7 @@ func (x *RegisterCharactersResponse) String() string {
 func (*RegisterCharactersResponse) ProtoMessage() {}
 
 func (x *RegisterCharactersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[11]
+	mi := &file_game_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -957,7 +1025,7 @@ func (x *RegisterCharactersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterCharactersResponse.ProtoReflect.Descriptor instead.
 func (*RegisterCharactersResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{11}
+	return file_game_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RegisterCharactersResponse) GetRegisteredCharacters() []*UniqueCharacter {
@@ -978,7 +1046,10 @@ const file_game_proto_rawDesc = "" +
 	"\n" +
 	"player1_id\x18\x02 \x01(\tR\tplayer1Id\x12\x1d\n" +
 	"\n" +
-	"player2_id\x18\x03 \x01(\tR\tplayer2Id\"\xd1\x01\n" +
+	"player2_id\x18\x03 \x01(\tR\tplayer2Id\"I\n" +
+	"\x11StreamGameRequest\x12\x17\n" +
+	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
+	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\"\xd1\x01\n" +
 	"\fPlayerAction\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
 	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12.\n" +
@@ -1000,7 +1071,7 @@ const file_game_proto_rawDesc = "" +
 	"\bbase_hp1\x18\x04 \x01(\rR\abaseHp1\x12\x19\n" +
 	"\bbase_hp2\x18\x05 \x01(\rR\abaseHp2\x12?\n" +
 	"\x1cattacked_character_unique_id\x18\x06 \x01(\rR\x19attackedCharacterUniqueId\x12\x15\n" +
-	"\x06new_hp\x18\a \x01(\rR\x05newHp\"\xd3\x04\n" +
+	"\x06new_hp\x18\a \x01(\rR\x05newHp\"\x85\x05\n" +
 	"\x10GameDataResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
 	"\aroom_id\x18\x02 \x01(\rR\x06roomId\x12\x1d\n" +
@@ -1024,7 +1095,9 @@ const file_game_proto_rawDesc = "" +
 	"\vfinished_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishedAt\x12;\n" +
 	"\fattack_infos\x18\x0e \x03(\v2\x18.game.network.AttackInfoR\vattackInfos\x12,\n" +
-	"\x05grids\x18\x0f \x03(\v2\x16.game.network.GridInfoR\x05grids\"e\n" +
+	"\x05grids\x18\x0f \x03(\v2\x16.game.network.GridInfoR\x05grids\x12\x17\n" +
+	"\acost_1p\x18\x10 \x01(\rR\x06cost1p\x12\x17\n" +
+	"\acost_2p\x18\x11 \x01(\rR\x06cost2p\"e\n" +
 	"\bGridInfo\x12\x1d\n" +
 	"\n" +
 	"position_x\x18\x01 \x01(\rR\tpositionX\x12\x1d\n" +
@@ -1068,14 +1141,17 @@ const file_game_proto_rawDesc = "" +
 	"\x05is_1p\x18\x02 \x01(\bR\x04is1p\x12#\n" +
 	"\rcharacter_ids\x18\x03 \x03(\rR\fcharacterIds\"p\n" +
 	"\x1aRegisterCharactersResponse\x12R\n" +
-	"\x15registered_characters\x18\x01 \x03(\v2\x1d.game.network.UniqueCharacterR\x14registeredCharacters2\xe6\x02\n" +
+	"\x15registered_characters\x18\x01 \x03(\v2\x1d.game.network.UniqueCharacterR\x14registeredCharacters2\xc4\x04\n" +
 	"\rBattleService\x12M\n" +
 	"\n" +
 	"CreateGame\x12\x1f.game.network.CreateGameRequest\x1a\x1e.game.network.GameDataResponse\x12O\n" +
 	"\vGetGameData\x12 .game.network.GetGameDataRequest\x1a\x1e.game.network.GameDataResponse\x12g\n" +
-	"\x12RegisterCharacters\x12'.game.network.RegisterCharactersRequest\x1a(.game.network.RegisterCharactersResponse\x12L\n" +
+	"\x12RegisterCharacters\x12'.game.network.RegisterCharactersRequest\x1a(.game.network.RegisterCharactersResponse\x12O\n" +
 	"\n" +
-	"StreamGame\x12\x1a.game.network.PlayerAction\x1a\x1e.game.network.GameDataResponse(\x010\x01B\x1bZ\n" +
+	"StreamGame\x12\x1f.game.network.StreamGameRequest\x1a\x1e.game.network.GameDataResponse0\x01\x12G\n" +
+	"\tApplyMove\x12\x1a.game.network.PlayerAction\x1a\x1e.game.network.GameDataResponse\x12I\n" +
+	"\vApplyAttack\x12\x1a.game.network.PlayerAction\x1a\x1e.game.network.GameDataResponse\x12E\n" +
+	"\aEndTurn\x12\x1a.game.network.PlayerAction\x1a\x1e.game.network.GameDataResponseB\x1bZ\n" +
 	"auxilia/pb\xaa\x02\fGame.Networkb\x06proto3"
 
 var (
@@ -1090,43 +1166,50 @@ func file_game_proto_rawDescGZIP() []byte {
 	return file_game_proto_rawDescData
 }
 
-var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_game_proto_goTypes = []any{
 	(*CreateGameRequest)(nil),          // 0: game.network.CreateGameRequest
-	(*PlayerAction)(nil),               // 1: game.network.PlayerAction
-	(*MoveAction)(nil),                 // 2: game.network.MoveAction
-	(*AttackAction)(nil),               // 3: game.network.AttackAction
-	(*GameDataResponse)(nil),           // 4: game.network.GameDataResponse
-	(*GridInfo)(nil),                   // 5: game.network.GridInfo
-	(*UniqueCharacter)(nil),            // 6: game.network.UniqueCharacter
-	(*CharacterCondition)(nil),         // 7: game.network.CharacterCondition
-	(*AttackInfo)(nil),                 // 8: game.network.AttackInfo
-	(*GetGameDataRequest)(nil),         // 9: game.network.GetGameDataRequest
-	(*RegisterCharactersRequest)(nil),  // 10: game.network.RegisterCharactersRequest
-	(*RegisterCharactersResponse)(nil), // 11: game.network.RegisterCharactersResponse
-	(*timestamppb.Timestamp)(nil),      // 12: google.protobuf.Timestamp
+	(*StreamGameRequest)(nil),          // 1: game.network.StreamGameRequest
+	(*PlayerAction)(nil),               // 2: game.network.PlayerAction
+	(*MoveAction)(nil),                 // 3: game.network.MoveAction
+	(*AttackAction)(nil),               // 4: game.network.AttackAction
+	(*GameDataResponse)(nil),           // 5: game.network.GameDataResponse
+	(*GridInfo)(nil),                   // 6: game.network.GridInfo
+	(*UniqueCharacter)(nil),            // 7: game.network.UniqueCharacter
+	(*CharacterCondition)(nil),         // 8: game.network.CharacterCondition
+	(*AttackInfo)(nil),                 // 9: game.network.AttackInfo
+	(*GetGameDataRequest)(nil),         // 10: game.network.GetGameDataRequest
+	(*RegisterCharactersRequest)(nil),  // 11: game.network.RegisterCharactersRequest
+	(*RegisterCharactersResponse)(nil), // 12: game.network.RegisterCharactersResponse
+	(*timestamppb.Timestamp)(nil),      // 13: google.protobuf.Timestamp
 }
 var file_game_proto_depIdxs = []int32{
-	2,  // 0: game.network.PlayerAction.move:type_name -> game.network.MoveAction
-	3,  // 1: game.network.PlayerAction.attack:type_name -> game.network.AttackAction
-	12, // 2: game.network.GameDataResponse.turn_start_at:type_name -> google.protobuf.Timestamp
-	6,  // 3: game.network.GameDataResponse.characters:type_name -> game.network.UniqueCharacter
-	12, // 4: game.network.GameDataResponse.finished_at:type_name -> google.protobuf.Timestamp
-	8,  // 5: game.network.GameDataResponse.attack_infos:type_name -> game.network.AttackInfo
-	5,  // 6: game.network.GameDataResponse.grids:type_name -> game.network.GridInfo
-	7,  // 7: game.network.UniqueCharacter.conditions:type_name -> game.network.CharacterCondition
-	12, // 8: game.network.AttackInfo.attacked_at:type_name -> google.protobuf.Timestamp
-	6,  // 9: game.network.RegisterCharactersResponse.registered_characters:type_name -> game.network.UniqueCharacter
+	3,  // 0: game.network.PlayerAction.move:type_name -> game.network.MoveAction
+	4,  // 1: game.network.PlayerAction.attack:type_name -> game.network.AttackAction
+	13, // 2: game.network.GameDataResponse.turn_start_at:type_name -> google.protobuf.Timestamp
+	7,  // 3: game.network.GameDataResponse.characters:type_name -> game.network.UniqueCharacter
+	13, // 4: game.network.GameDataResponse.finished_at:type_name -> google.protobuf.Timestamp
+	9,  // 5: game.network.GameDataResponse.attack_infos:type_name -> game.network.AttackInfo
+	6,  // 6: game.network.GameDataResponse.grids:type_name -> game.network.GridInfo
+	8,  // 7: game.network.UniqueCharacter.conditions:type_name -> game.network.CharacterCondition
+	13, // 8: game.network.AttackInfo.attacked_at:type_name -> google.protobuf.Timestamp
+	7,  // 9: game.network.RegisterCharactersResponse.registered_characters:type_name -> game.network.UniqueCharacter
 	0,  // 10: game.network.BattleService.CreateGame:input_type -> game.network.CreateGameRequest
-	9,  // 11: game.network.BattleService.GetGameData:input_type -> game.network.GetGameDataRequest
-	10, // 12: game.network.BattleService.RegisterCharacters:input_type -> game.network.RegisterCharactersRequest
-	1,  // 13: game.network.BattleService.StreamGame:input_type -> game.network.PlayerAction
-	4,  // 14: game.network.BattleService.CreateGame:output_type -> game.network.GameDataResponse
-	4,  // 15: game.network.BattleService.GetGameData:output_type -> game.network.GameDataResponse
-	11, // 16: game.network.BattleService.RegisterCharacters:output_type -> game.network.RegisterCharactersResponse
-	4,  // 17: game.network.BattleService.StreamGame:output_type -> game.network.GameDataResponse
-	14, // [14:18] is the sub-list for method output_type
-	10, // [10:14] is the sub-list for method input_type
+	10, // 11: game.network.BattleService.GetGameData:input_type -> game.network.GetGameDataRequest
+	11, // 12: game.network.BattleService.RegisterCharacters:input_type -> game.network.RegisterCharactersRequest
+	1,  // 13: game.network.BattleService.StreamGame:input_type -> game.network.StreamGameRequest
+	2,  // 14: game.network.BattleService.ApplyMove:input_type -> game.network.PlayerAction
+	2,  // 15: game.network.BattleService.ApplyAttack:input_type -> game.network.PlayerAction
+	2,  // 16: game.network.BattleService.EndTurn:input_type -> game.network.PlayerAction
+	5,  // 17: game.network.BattleService.CreateGame:output_type -> game.network.GameDataResponse
+	5,  // 18: game.network.BattleService.GetGameData:output_type -> game.network.GameDataResponse
+	12, // 19: game.network.BattleService.RegisterCharacters:output_type -> game.network.RegisterCharactersResponse
+	5,  // 20: game.network.BattleService.StreamGame:output_type -> game.network.GameDataResponse
+	5,  // 21: game.network.BattleService.ApplyMove:output_type -> game.network.GameDataResponse
+	5,  // 22: game.network.BattleService.ApplyAttack:output_type -> game.network.GameDataResponse
+	5,  // 23: game.network.BattleService.EndTurn:output_type -> game.network.GameDataResponse
+	17, // [17:24] is the sub-list for method output_type
+	10, // [10:17] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -1137,7 +1220,7 @@ func file_game_proto_init() {
 	if File_game_proto != nil {
 		return
 	}
-	file_game_proto_msgTypes[1].OneofWrappers = []any{
+	file_game_proto_msgTypes[2].OneofWrappers = []any{
 		(*PlayerAction_Move)(nil),
 		(*PlayerAction_EndTurn)(nil),
 		(*PlayerAction_Attack)(nil),
@@ -1148,7 +1231,7 @@ func file_game_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_proto_rawDesc), len(file_game_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
