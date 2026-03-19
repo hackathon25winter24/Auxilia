@@ -31,9 +31,8 @@ func main() {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 
-	// ★ 修正点1: 必要な全モデルをマイグレーション対象に追加
 	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
-	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{}, &model.AttackInfo{})
+	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{}, &model.AttackInfo{}, &model.Grid{})
 
 	// room_matches の is_private を is_gaming に移行し、既存値はすべて false に揃える
 	migratedFromIsPrivate := false

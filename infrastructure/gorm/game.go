@@ -36,6 +36,18 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		// Characters は空の状態で開始
 	}
 
+	var grids []model.Grid
+	for x := uint(0); x < 8; x++ {
+		for y := uint(0); y < 5; y++ {
+			grids = append(grids, model.Grid{
+				PositionX: x,
+				PositionY: y,
+				GridType:  0,
+			})
+		}
+	}
+	gameData.Grids = grids
+
 	// キャラクター登録がないため、シンプルな Create で実装可能
 	if err := r.db.Create(gameData).Error; err != nil {
 		return nil, err
@@ -57,7 +69,7 @@ func (r *BattleRepository) loadGameDataByRoomID(roomID uint32) (*model.GameData,
 	var gameData model.GameData
 
 	// PreloadでCharactersとそのConditionsまで再帰的に取得
-	err := r.db.Preload("Characters.Conditions").
+	err := r.db.Preload("Characters.Conditions").Preload("Grids").
 		Where("room_id = ?", roomID).
 		First(&gameData).Error
 
@@ -163,7 +175,9 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 	return r.GetGameDataByRoomID(roomID)
 }
 
-func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32) (*model.GameData, error) {
+func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32) (*model.GameData, *model.AttackInfo, error) {
+	var createdAttackInfo *model.AttackInfo
+
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -224,6 +238,7 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		if err := tx.Create(&attackInfo).Error; err != nil {
 			return err
 		}
+		createdAttackInfo = &attackInfo
 
 		if err := tx.Model(&model.UniqueCharacter{}).
 			Where("id = ?", character.ID).
@@ -251,10 +266,11 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return r.GetGameDataByRoomID(roomID)
+	gameData, err := r.GetGameDataByRoomID(roomID)
+	return gameData, createdAttackInfo, err
 }
 
 func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {

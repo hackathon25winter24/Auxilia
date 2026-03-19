@@ -68,6 +68,14 @@ message GameDataResponse {
   bool is_finished = 11;
   string winner_player_id = 12;
   google.protobuf.Timestamp finished_at = 13;
+  repeated AttackInfo attack_infos = 14;
+  repeated GridInfo grids = 15;
+}
+
+message GridInfo {
+  uint32 position_x = 1;
+  uint32 position_y = 2;
+  int32 grid_type = 3;
 }
 
 message UniqueCharacter {
@@ -85,6 +93,16 @@ message CharacterCondition {
   uint32 id = 1;
   int32 condition_id = 2;
   int32 lasting_turn = 3;
+}
+
+message AttackInfo {
+  uint32 id = 1;
+  uint32 room_id = 2;
+  int32 attacker_side = 3;
+  bool is_started = 4;
+  uint32 attacker_character_id = 5;
+  int32 attack_type = 6;
+  google.protobuf.Timestamp attacked_at = 7;
 }
 
 message GetGameDataRequest {

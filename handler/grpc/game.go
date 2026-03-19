@@ -1,17 +1,19 @@
 package handlergrpc
 
 import (
-	"auxilia/domain"
 	repository "auxilia/domain/interface"
 	"auxilia/domain/model" // プロジェクト構造に合わせて調整してください
 	"auxilia/pb"
 	"context"
-	"errors"
 	"io"
+	"sync"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+var (
+	roomStreams   = make(map[uint32][]pb.BattleService_StreamGameServer)
+	roomStreamsMu sync.Mutex
 )
 
 type BattleHandler struct {
@@ -87,6 +89,15 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		}
 		res.Characters = append(res.Characters, char)
 	}
+
+	for _, grid := range m.Grids {
+		res.Grids = append(res.Grids, &pb.GridInfo{
+			PositionX: uint32(grid.PositionX),
+			PositionY: uint32(grid.PositionY),
+			GridType:  grid.GridType,
+		})
+	}
+
 	return res
 }
 
@@ -116,82 +127,100 @@ func (h *BattleHandler) RegisterCharacters(ctx context.Context, req *pb.Register
 }
 
 func (h *BattleHandler) StreamGame(stream pb.BattleService_StreamGameServer) error {
+	// 最初のアクションでroomIDを取得しストリーム登録
+	action, err := stream.Recv()
+	if err == io.EOF {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	roomID := action.RoomId
+
+	roomStreamsMu.Lock()
+	roomStreams[roomID] = append(roomStreams[roomID], stream)
+	roomStreamsMu.Unlock()
+
+	defer func() {
+		roomStreamsMu.Lock()
+		streams := roomStreams[roomID]
+		for i, s := range streams {
+			if s == stream {
+				roomStreams[roomID] = append(streams[:i], streams[i+1:]...)
+				break
+			}
+		}
+		roomStreamsMu.Unlock()
+	}()
+
 	for {
-		action, err := stream.Recv()
-		if err == io.EOF {
-			return nil
+		// 2回目以降のアクション受信
+		if action == nil {
+			action, err = stream.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
 		}
-		if err != nil {
-			return err
-		}
+
+		var gameData *model.GameData
+		var attackInfo *model.AttackInfo
+		var sendErr error
 
 		switch a := action.GetAction().(type) {
 		case *pb.PlayerAction_Move:
 			if a.Move == nil {
+				action = nil
 				continue
 			}
-
-			gameData, err := h.repo.ApplyMove(action.RoomId, action.PlayerId, a.Move.CharacterUniqueId, a.Move.ToX, a.Move.ToY)
-			if err != nil {
-				if errors.Is(err, domain.ErrGameNotFound) || errors.Is(err, domain.ErrCharacterNotFound) {
-					return status.Errorf(codes.NotFound, "game or character not found in room ID %d", action.RoomId)
-				}
-				if errors.Is(err, domain.ErrInvalidTurn) || errors.Is(err, domain.ErrForbiddenAction) {
-					return status.Errorf(codes.FailedPrecondition, "invalid move: %v", err)
-				}
-				return status.Errorf(codes.Internal, "failed to apply move: %v", err)
-			}
-
-			if err := stream.Send(convertToResponse(gameData)); err != nil {
-				return err
-			}
+			gameData, sendErr = h.repo.ApplyMove(action.RoomId, action.PlayerId, a.Move.CharacterUniqueId, a.Move.ToX, a.Move.ToY)
 		case *pb.PlayerAction_Attack:
 			if a.Attack == nil {
+				action = nil
 				continue
 			}
-
-			gameData, err := h.repo.ApplyAttack(action.RoomId, action.PlayerId, a.Attack.AttackerCharacterUniqueId, a.Attack.AttackType, a.Attack.IsStarted, a.Attack.BaseHp1, a.Attack.BaseHp2, a.Attack.AttackedCharacterUniqueId, a.Attack.NewHp)
-			if err != nil {
-				if errors.Is(err, domain.ErrGameNotFound) || errors.Is(err, domain.ErrCharacterNotFound) {
-					return status.Errorf(codes.NotFound, "game or character not found in room ID %d", action.RoomId)
-				}
-				if errors.Is(err, domain.ErrInvalidTurn) || errors.Is(err, domain.ErrForbiddenAction) {
-					return status.Errorf(codes.FailedPrecondition, "invalid attack: %v", err)
-				}
-				return status.Errorf(codes.Internal, "failed to apply attack: %v", err)
-			}
-
-			if err := stream.Send(convertToResponse(gameData)); err != nil {
-				return err
-			}
+			gameData, attackInfo, sendErr = h.repo.ApplyAttack(action.RoomId, action.PlayerId, a.Attack.AttackerCharacterUniqueId, a.Attack.AttackType, a.Attack.IsStarted, a.Attack.BaseHp1, a.Attack.BaseHp2, a.Attack.AttackedCharacterUniqueId, a.Attack.NewHp)
 		case *pb.PlayerAction_EndTurn:
 			if !a.EndTurn {
+				action = nil
 				continue
 			}
-
-			gameData, err := h.repo.EndTurn(action.RoomId)
-			if err != nil {
-				if errors.Is(err, domain.ErrGameNotFound) {
-					return status.Errorf(codes.NotFound, "game with room ID %d not found", action.RoomId)
-				}
-				return status.Errorf(codes.Internal, "failed to end turn: %v", err)
-			}
-
-			if err := stream.Send(convertToResponse(gameData)); err != nil {
-				return err
-			}
+			gameData, sendErr = h.repo.EndTurn(action.RoomId)
 		default:
-			gameData, err := h.repo.GetGameDataByRoomID(action.RoomId)
-			if err != nil {
-				if errors.Is(err, domain.ErrGameNotFound) {
-					return status.Errorf(codes.NotFound, "game with room ID %d not found", action.RoomId)
-				}
-				return status.Errorf(codes.Internal, "failed to fetch game data: %v", err)
-			}
+			gameData, sendErr = h.repo.GetGameDataByRoomID(action.RoomId)
+		}
 
-			if err := stream.Send(convertToResponse(gameData)); err != nil {
-				return err
+		if sendErr != nil {
+			// エラーは呼び出し元ストリームだけに返す
+			return sendErr
+		}
+
+		resp := convertToResponse(gameData)
+
+		if attackInfo != nil {
+			resp.AttackInfos = []*pb.AttackInfo{
+				{
+					Id:                  uint32(attackInfo.ID),
+					RoomId:              uint32(attackInfo.RoomID),
+					AttackerSide:        attackInfo.AttackerSide,
+					IsStarted:           attackInfo.IsStarted,
+					AttackerCharacterId: uint32(*attackInfo.AttackerCharacterID),
+					AttackType:          attackInfo.AttackType,
+					AttackedAt:          timestamppb.New(attackInfo.AttackedAt),
+				},
 			}
 		}
+
+		// 部屋内全ストリームに送信
+		roomStreamsMu.Lock()
+		streams := roomStreams[roomID]
+		roomStreamsMu.Unlock()
+		for _, s := range streams {
+			s.Send(resp)
+		}
+
+		action = nil
 	}
 }

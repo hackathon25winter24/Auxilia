@@ -20,6 +20,20 @@ type GameData struct {
 	FinishedAt     *time.Time
 
 	Characters []UniqueCharacter `gorm:"foreignKey:RoomID;references:RoomID"`
+	Grids      []Grid            `gorm:"foreignKey:RoomID;references:RoomID"`
+}
+
+type Grid struct {
+	ID        uint `gorm:"primaryKey"`
+	RoomID    uint `gorm:"index"`
+	PositionX uint
+	PositionY uint
+	GridType  int32
+}
+
+// TableName overrides the table name used by GORM
+func (Grid) TableName() string {
+	return "game_grids"
 }
 
 type UniqueCharacter struct {
