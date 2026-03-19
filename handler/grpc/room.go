@@ -65,9 +65,12 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 	}()
 
 	// 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
-	if resp := h.fetchRoomResponse(roomID); resp != nil {
-		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(resp.Rooms))
-		if sendErr := stream.Send(resp); sendErr != nil {
+	response, err := h.ListRoom(stream.Context(), &pb.ListRoomRequest{RoomId: roomID})
+	if err != nil {
+		log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, err)
+	} else {
+		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(response.Rooms))
+		if sendErr := stream.Send(response); sendErr != nil {
 			log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
 		} else {
 			log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
@@ -75,6 +78,8 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 	}
 
 	for {
+		// クライアントからは一度接続された後、サーバーからのプッシュ通信を待機する想定のため
+		// ここでは切断（EOF/エラー）を検知するまでブロックして待ち続けます。
 		_, err := stream.Recv()
 		if err == io.EOF {
 			log.Printf("[StreamRoom] EOF in loop for room %d", roomID)
@@ -84,33 +89,7 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
 			log.Printf("[StreamRoom] Error in loop for room %d: %v", roomID, err)
 			return err
 		}
-
-		log.Printf("[StreamRoom] Received message in loop for room %d, broadcasting...", roomID)
-		if resp := h.fetchRoomResponse(roomID); resp != nil {
-			h.broadcastToRoom(roomID, resp)
-		}
 	}
-}
-
-// fetchRoomResponse はリポジトリを直接呼び出してルーム情報を取得する（gRPCコンテキストに依存しない）
-func (h *RoomHandler) fetchRoomResponse(roomID int32) *pb.ListRoomResponse {
-	rooms, err := h.repo.ListRoom(context.Background(), roomID)
-	if err != nil {
-		log.Printf("[fetchRoomResponse] Error fetching room %d: %v", roomID, err)
-		return nil
-	}
-
-	var pbRooms []*pb.Room
-	for _, r := range rooms {
-		pbRooms = append(pbRooms, &pb.Room{
-			RoomId:   r.RoomID,
-			UserId:   r.UserID,
-			State:    r.State,
-			IsReady:  r.IsReady,
-			JoinedAt: r.JoinedAt.Format(time.RFC3339),
-		})
-	}
-	return &pb.ListRoomResponse{Rooms: pbRooms}
 }
 
 func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomResponse) {
