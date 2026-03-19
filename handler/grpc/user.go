@@ -2,19 +2,21 @@ package handlergrpc
 
 import (
 	"context"
-	"errors" // 追加
+	"errors"  // 追加
 	"strings" // 追加
 
+	repository "auxilia/domain/interface"
 	"auxilia/domain/model"
-	"auxilia/domain/interface"
 	"auxilia/pb"
 
+	"unicode/utf8"
+
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm" // GORMのエラー判定用
-	"unicode/utf8"
 )
 
 type UserHandler struct {
@@ -35,10 +37,10 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Error(codes.InvalidArgument, "ユーザー名を入力してください")
 	}
 	if utf8.RuneCountInString(req.Name) > 16 {
-			return nil, status.Error(codes.InvalidArgument, "ユーザー名は16文字以内で入力してください")
+			return nil, status.Error(codes.OutOfRange, "ユーザー名は16文字以内で入力してください")
 	}
 	if len(req.Password) < 6 {
-		return nil, status.Error(codes.InvalidArgument, "パスワードが短すぎます")
+		return nil, status.Error(codes.FailedPrecondition, "パスワードが短すぎます")
 	}
 
 	// 1. パスワードハッシュ化
@@ -64,8 +66,14 @@ func (h *UserHandler) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 
 	// 3. DB保存とエラー判定
 	if err := h.repo.Create(ctx, newUser); err != nil {
-		// PostgreSQLやSQLiteの一意制約エラーを検知 (GORM想定)
-		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "UNIQUE constraint") {
+		var mysqlErr *mysql.MySQLError
+		// Check if the error is a MySQL error and specifically code 1062
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+			return nil, status.Error(codes.AlreadyExists, "そのユーザー名は既に使用されています")
+		}
+
+		// Fallback for other drivers or general errors
+		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "1062") {
 			return nil, status.Error(codes.AlreadyExists, "そのユーザー名は既に使用されています")
 		}
 		return nil, status.Errorf(codes.Internal, "ユーザー作成失敗: %v", err)
