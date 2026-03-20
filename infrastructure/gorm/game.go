@@ -265,6 +265,13 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			}
 		}
 
+		// 攻撃後にゲーム終了判定を行う
+		if isGameFinished(uint(baseHP1), uint(baseHP2)) {
+			if err := r.finishGameAndUpdateRatings(tx, &gameData, time.Now()); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -371,6 +378,12 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		player2.NumWins++
 	}
 
+	// レート変動値と更新後のレートを GameData に記録
+	gameData.Player1RateDelta = newRate1 - player1.Rate
+	gameData.Player2RateDelta = newRate2 - player2.Rate
+	gameData.Player1Rate = newRate1
+	gameData.Player2Rate = newRate2
+
 	if err := tx.Save(&player1).Error; err != nil {
 		return err
 	}
@@ -387,6 +400,11 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 	} else {
 		updates["winner_player_id"] = nil
 	}
+
+	updates["player1_rate_delta"] = gameData.Player1RateDelta
+	updates["player2_rate_delta"] = gameData.Player2RateDelta
+	updates["player1_rate"] = gameData.Player1Rate
+	updates["player2_rate"] = gameData.Player2Rate
 
 	if err := tx.Model(&model.GameData{}).
 		Where("id = ?", gameData.ID).
