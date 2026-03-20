@@ -513,3 +513,47 @@ func minAliveMoveCost(characters []model.UniqueCharacter, is1P bool) (int, bool)
 
 	return minCost, found
 }
+
+func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids []model.Grid) (*model.GameData, error) {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("room_id = ?", roomID).
+			First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrGameNotFound
+			}
+			return err
+		}
+
+		if gameData.IsFinished {
+			return nil
+		}
+
+		// ターンチェック (オプションだが他のApply系と同様に実装)
+		is1PTurn := gameData.Is1PTurn
+		expectedPlayerID := gameData.Player2ID
+		if is1PTurn {
+			expectedPlayerID = gameData.Player1ID
+		}
+		if playerID != expectedPlayerID {
+			return domain.ErrInvalidTurn
+		}
+
+		// グリッド情報の更新
+		for _, g := range grids {
+			if err := tx.Model(&model.Grid{}).
+				Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
+				Update("grid_type", g.GridType).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return r.GetGameDataByRoomID(roomID)
+}

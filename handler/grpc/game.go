@@ -232,3 +232,28 @@ func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.PlayerAction) (*pb.
 	h.broadcastToGame(req.RoomId, resp)
 	return resp, nil
 }
+
+func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.PlayerAction) (*pb.GameDataResponse, error) {
+	gridUpdate := req.GetGridUpdate()
+	if gridUpdate == nil {
+		return nil, status.Error(codes.InvalidArgument, "grid_update is required")
+	}
+
+	var modelGrids []model.Grid
+	for _, g := range gridUpdate.Grids {
+		modelGrids = append(modelGrids, model.Grid{
+			PositionX: uint(g.PositionX),
+			PositionY: uint(g.PositionY),
+			GridType:  g.GridType,
+		})
+	}
+
+	gameData, err := h.repo.ApplyGridUpdate(req.RoomId, req.PlayerId, modelGrids)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := convertToResponse(gameData)
+	h.broadcastToGame(req.RoomId, resp)
+	return resp, nil
+}
