@@ -21,6 +21,11 @@ type GameData struct {
 	WinnerPlayerID *string
 	FinishedAt     *time.Time
 
+	Player1RateDelta int
+	Player2RateDelta int
+	Player1Rate      int
+	Player2Rate      int
+
 	Characters []UniqueCharacter `gorm:"foreignKey:RoomID;references:RoomID"`
 	Grids      []Grid            `gorm:"foreignKey:RoomID;references:RoomID"`
 }
