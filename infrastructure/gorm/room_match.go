@@ -39,3 +39,15 @@ func (r *RoomMatchRepository) FindAll(ctx context.Context) ([]model.RoomMatch, e
 	}
 	return rooms, nil
 }
+
+func (r *RoomMatchRepository) UpdateRoomMatch(room *model.RoomMatch) error {
+	err := r.db.Model(&model.RoomMatch{}).
+		Where("id = ?", room.ID).
+		Updates(map[string]interface{}{
+			"room_name":  room.RoomName,
+			"owner_id":   room.OwnerID,
+			"is_gaming":  room.IsGaming,
+		}).Error
+
+	return err
+}
