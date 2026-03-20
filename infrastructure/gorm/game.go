@@ -440,7 +440,8 @@ func determineNextActor(characters []model.UniqueCharacter, currentIs1PTurn bool
 		return false
 	}
 
-	return randomFirstPlayer(currentIs1PTurn)
+	// コストが同等の場合は、現在のターンを反転させる (強制的な交代)
+	return !currentIs1PTurn
 }
 
 func randomFirstPlayer(fallback bool) bool {
