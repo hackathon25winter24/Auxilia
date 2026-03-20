@@ -8,6 +8,8 @@ service RoomMatchService {
     rpc CreateRoomMatch (CreateRoomMatchRequest) returns (RoomMatchResponse);
 
     rpc ListRoomMatch (ListRoomMatchRequest) returns (ListRoomMatchResponse);
+
+    rpc UpdateRoomMatch (UpdateRoomMatchRequest) returns (RoomMatchResponse);
 }
 
 message RoomMatch {
@@ -31,4 +33,11 @@ message ListRoomMatchRequest {}
 
 message ListRoomMatchResponse {
     repeated RoomMatch rooms = 1;
+}
+
+message UpdateRoomMatchRequest{
+    int32 room_id = 1;
+    string room_name = 2;
+    string owner_id = 3;
+    bool is_gaming = 4;
 }
