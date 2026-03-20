@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.4
-// source: room_match.proto
+// source: proto/room_match.proto
 
 package pb
 
@@ -33,7 +33,7 @@ type RoomMatch struct {
 
 func (x *RoomMatch) Reset() {
 	*x = RoomMatch{}
-	mi := &file_room_match_proto_msgTypes[0]
+	mi := &file_proto_room_match_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *RoomMatch) String() string {
 func (*RoomMatch) ProtoMessage() {}
 
 func (x *RoomMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_room_match_proto_msgTypes[0]
+	mi := &file_proto_room_match_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *RoomMatch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoomMatch.ProtoReflect.Descriptor instead.
 func (*RoomMatch) Descriptor() ([]byte, []int) {
-	return file_room_match_proto_rawDescGZIP(), []int{0}
+	return file_proto_room_match_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RoomMatch) GetRoomId() int32 {
@@ -100,7 +100,7 @@ type CreateRoomMatchRequest struct {
 
 func (x *CreateRoomMatchRequest) Reset() {
 	*x = CreateRoomMatchRequest{}
-	mi := &file_room_match_proto_msgTypes[1]
+	mi := &file_proto_room_match_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -112,7 +112,7 @@ func (x *CreateRoomMatchRequest) String() string {
 func (*CreateRoomMatchRequest) ProtoMessage() {}
 
 func (x *CreateRoomMatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_room_match_proto_msgTypes[1]
+	mi := &file_proto_room_match_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -125,7 +125,7 @@ func (x *CreateRoomMatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRoomMatchRequest.ProtoReflect.Descriptor instead.
 func (*CreateRoomMatchRequest) Descriptor() ([]byte, []int) {
-	return file_room_match_proto_rawDescGZIP(), []int{1}
+	return file_proto_room_match_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreateRoomMatchRequest) GetRoomName() string {
@@ -158,7 +158,7 @@ type RoomMatchResponse struct {
 
 func (x *RoomMatchResponse) Reset() {
 	*x = RoomMatchResponse{}
-	mi := &file_room_match_proto_msgTypes[2]
+	mi := &file_proto_room_match_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +170,7 @@ func (x *RoomMatchResponse) String() string {
 func (*RoomMatchResponse) ProtoMessage() {}
 
 func (x *RoomMatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_room_match_proto_msgTypes[2]
+	mi := &file_proto_room_match_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +183,7 @@ func (x *RoomMatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoomMatchResponse.ProtoReflect.Descriptor instead.
 func (*RoomMatchResponse) Descriptor() ([]byte, []int) {
-	return file_room_match_proto_rawDescGZIP(), []int{2}
+	return file_proto_room_match_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RoomMatchResponse) GetRoom() *RoomMatch {
@@ -201,7 +201,7 @@ type ListRoomMatchRequest struct {
 
 func (x *ListRoomMatchRequest) Reset() {
 	*x = ListRoomMatchRequest{}
-	mi := &file_room_match_proto_msgTypes[3]
+	mi := &file_proto_room_match_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -213,7 +213,7 @@ func (x *ListRoomMatchRequest) String() string {
 func (*ListRoomMatchRequest) ProtoMessage() {}
 
 func (x *ListRoomMatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_room_match_proto_msgTypes[3]
+	mi := &file_proto_room_match_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -226,7 +226,7 @@ func (x *ListRoomMatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRoomMatchRequest.ProtoReflect.Descriptor instead.
 func (*ListRoomMatchRequest) Descriptor() ([]byte, []int) {
-	return file_room_match_proto_rawDescGZIP(), []int{3}
+	return file_proto_room_match_proto_rawDescGZIP(), []int{3}
 }
 
 type ListRoomMatchResponse struct {
@@ -238,7 +238,7 @@ type ListRoomMatchResponse struct {
 
 func (x *ListRoomMatchResponse) Reset() {
 	*x = ListRoomMatchResponse{}
-	mi := &file_room_match_proto_msgTypes[4]
+	mi := &file_proto_room_match_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -250,7 +250,7 @@ func (x *ListRoomMatchResponse) String() string {
 func (*ListRoomMatchResponse) ProtoMessage() {}
 
 func (x *ListRoomMatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_room_match_proto_msgTypes[4]
+	mi := &file_proto_room_match_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -263,7 +263,7 @@ func (x *ListRoomMatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRoomMatchResponse.ProtoReflect.Descriptor instead.
 func (*ListRoomMatchResponse) Descriptor() ([]byte, []int) {
-	return file_room_match_proto_rawDescGZIP(), []int{4}
+	return file_proto_room_match_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListRoomMatchResponse) GetRooms() []*RoomMatch {
@@ -273,11 +273,11 @@ func (x *ListRoomMatchResponse) GetRooms() []*RoomMatch {
 	return nil
 }
 
-var File_room_match_proto protoreflect.FileDescriptor
+var File_proto_room_match_proto protoreflect.FileDescriptor
 
-const file_room_match_proto_rawDesc = "" +
+const file_proto_room_match_proto_rawDesc = "" +
 	"\n" +
-	"\x10room_match.proto\x12\troommatch\"y\n" +
+	"\x16proto/room_match.proto\x12\troommatch\"y\n" +
 	"\tRoomMatch\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\x05R\x06roomId\x12\x1b\n" +
 	"\troom_name\x18\x02 \x01(\tR\broomName\x12\x19\n" +
@@ -298,26 +298,26 @@ const file_room_match_proto_rawDesc = "" +
 	"auxilia/pbb\x06proto3"
 
 var (
-	file_room_match_proto_rawDescOnce sync.Once
-	file_room_match_proto_rawDescData []byte
+	file_proto_room_match_proto_rawDescOnce sync.Once
+	file_proto_room_match_proto_rawDescData []byte
 )
 
-func file_room_match_proto_rawDescGZIP() []byte {
-	file_room_match_proto_rawDescOnce.Do(func() {
-		file_room_match_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_room_match_proto_rawDesc), len(file_room_match_proto_rawDesc)))
+func file_proto_room_match_proto_rawDescGZIP() []byte {
+	file_proto_room_match_proto_rawDescOnce.Do(func() {
+		file_proto_room_match_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_room_match_proto_rawDesc), len(file_proto_room_match_proto_rawDesc)))
 	})
-	return file_room_match_proto_rawDescData
+	return file_proto_room_match_proto_rawDescData
 }
 
-var file_room_match_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_room_match_proto_goTypes = []any{
+var file_proto_room_match_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_room_match_proto_goTypes = []any{
 	(*RoomMatch)(nil),              // 0: roommatch.RoomMatch
 	(*CreateRoomMatchRequest)(nil), // 1: roommatch.CreateRoomMatchRequest
 	(*RoomMatchResponse)(nil),      // 2: roommatch.RoomMatchResponse
 	(*ListRoomMatchRequest)(nil),   // 3: roommatch.ListRoomMatchRequest
 	(*ListRoomMatchResponse)(nil),  // 4: roommatch.ListRoomMatchResponse
 }
-var file_room_match_proto_depIdxs = []int32{
+var file_proto_room_match_proto_depIdxs = []int32{
 	0, // 0: roommatch.RoomMatchResponse.room:type_name -> roommatch.RoomMatch
 	0, // 1: roommatch.ListRoomMatchResponse.rooms:type_name -> roommatch.RoomMatch
 	1, // 2: roommatch.RoomMatchService.CreateRoomMatch:input_type -> roommatch.CreateRoomMatchRequest
@@ -331,26 +331,26 @@ var file_room_match_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_room_match_proto_init() }
-func file_room_match_proto_init() {
-	if File_room_match_proto != nil {
+func init() { file_proto_room_match_proto_init() }
+func file_proto_room_match_proto_init() {
+	if File_proto_room_match_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_room_match_proto_rawDesc), len(file_room_match_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_room_match_proto_rawDesc), len(file_proto_room_match_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_room_match_proto_goTypes,
-		DependencyIndexes: file_room_match_proto_depIdxs,
-		MessageInfos:      file_room_match_proto_msgTypes,
+		GoTypes:           file_proto_room_match_proto_goTypes,
+		DependencyIndexes: file_proto_room_match_proto_depIdxs,
+		MessageInfos:      file_proto_room_match_proto_msgTypes,
 	}.Build()
-	File_room_match_proto = out.File
-	file_room_match_proto_goTypes = nil
-	file_room_match_proto_depIdxs = nil
+	File_proto_room_match_proto = out.File
+	file_proto_room_match_proto_goTypes = nil
+	file_proto_room_match_proto_depIdxs = nil
 }

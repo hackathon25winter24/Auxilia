@@ -96,9 +96,11 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 
 	for _, grid := range m.Grids {
 		res.Grids = append(res.Grids, &pb.GridInfo{
-			PositionX: uint32(grid.PositionX),
-			PositionY: uint32(grid.PositionY),
-			GridType:  grid.GridType,
+			PositionX:     uint32(grid.PositionX),
+			PositionY:     uint32(grid.PositionY),
+			GridType:      grid.GridType,
+			IsSelected:    grid.IsSelected,
+			IsAttackRange: grid.IsAttackRange,
 		})
 	}
 
@@ -224,6 +226,33 @@ func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.PlayerAction) (*pb.
 	}
 
 	gameData, err := h.repo.EndTurn(req.RoomId)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := convertToResponse(gameData)
+	h.broadcastToGame(req.RoomId, resp)
+	return resp, nil
+}
+
+func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.PlayerAction) (*pb.GameDataResponse, error) {
+	gridUpdate := req.GetGridUpdate()
+	if gridUpdate == nil {
+		return nil, status.Error(codes.InvalidArgument, "grid_update is required")
+	}
+
+	var modelGrids []model.Grid
+	for _, g := range gridUpdate.Grids {
+		modelGrids = append(modelGrids, model.Grid{
+			PositionX:     uint(g.PositionX),
+			PositionY:     uint(g.PositionY),
+			GridType:      g.GridType,
+			IsSelected:    g.IsSelected,
+			IsAttackRange: g.IsAttackRange,
+		})
+	}
+
+	gameData, err := h.repo.ApplyGridUpdate(req.RoomId, req.PlayerId, modelGrids)
 	if err != nil {
 		return nil, err
 	}

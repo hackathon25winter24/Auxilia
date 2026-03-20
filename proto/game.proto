@@ -22,6 +22,7 @@ service BattleService {
   rpc ApplyMove(PlayerAction) returns (GameDataResponse);
   rpc ApplyAttack(PlayerAction) returns (GameDataResponse);
   rpc EndTurn(PlayerAction) returns (GameDataResponse);
+  rpc ApplyGridUpdate(PlayerAction) returns (GameDataResponse);
 }
 
 // 試合登録用リクエスト
@@ -44,7 +45,12 @@ message PlayerAction {
     MoveAction move = 3;
     bool end_turn = 4;
     AttackAction attack = 5;
+    GridUpdateAction grid_update = 6;
   }
+}
+
+message GridUpdateAction {
+  repeated GridInfo grids = 1;
 }
 
 message MoveAction {
@@ -88,6 +94,8 @@ message GridInfo {
   uint32 position_x = 1;
   uint32 position_y = 2;
   int32 grid_type = 3;
+  bool is_selected = 4;
+  bool is_attack_range = 5;
 }
 
 message UniqueCharacter {
