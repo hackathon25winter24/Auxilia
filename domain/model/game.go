@@ -90,6 +90,7 @@ var CharacterHPs = map[uint]int{
 	7: 300,
 	8: 100,
 	9: 200,
+	10: 200,
 }
 
 var CharacterMoveCosts = map[uint]int{
@@ -103,4 +104,5 @@ var CharacterMoveCosts = map[uint]int{
 	7: 5,
 	8: 10,
 	9: 5,
+	10: 10,
 }
