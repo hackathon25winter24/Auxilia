@@ -265,6 +265,13 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			}
 		}
 
+		// 攻撃後にゲーム終了判定を行う
+		if isGameFinished(uint(baseHP1), uint(baseHP2)) {
+			if err := r.finishGameAndUpdateRatings(tx, &gameData, time.Now()); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -301,7 +308,7 @@ func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
 			return err
 		}
 
-		nextIs1P := determineNextActor(characters, gameData.Is1PTurn)
+		nextIs1P := determineNextActor(&gameData, characters)
 		return tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Updates(map[string]any{
@@ -360,7 +367,9 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		return err
 	}
 
-	newRate1, newRate2 := calculateEloRates(player1.Rate, player2.Rate, score1, score2)
+	oldRate1 := player1.Rate
+	oldRate2 := player2.Rate
+	newRate1, newRate2 := calculateEloRates(oldRate1, oldRate2, score1, score2)
 	player1.Rate = newRate1
 	player2.Rate = newRate2
 	player1.NumBattles++
@@ -370,6 +379,12 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 	} else if score2 > score1 {
 		player2.NumWins++
 	}
+
+	// レート変動値と更新後のレートを GameData に記録
+	gameData.Player1RateDelta = newRate1 - oldRate1
+	gameData.Player2RateDelta = newRate2 - oldRate2
+	gameData.Player1Rate = newRate1
+	gameData.Player2Rate = newRate2
 
 	if err := tx.Save(&player1).Error; err != nil {
 		return err
@@ -387,6 +402,11 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 	} else {
 		updates["winner_player_id"] = nil
 	}
+
+	updates["player1_rate_delta"] = gameData.Player1RateDelta
+	updates["player2_rate_delta"] = gameData.Player2RateDelta
+	updates["player1_rate"] = gameData.Player1Rate
+	updates["player2_rate"] = gameData.Player2Rate
 
 	if err := tx.Model(&model.GameData{}).
 		Where("id = ?", gameData.ID).
@@ -416,14 +436,28 @@ func (r *BattleRepository) recalculateTurnStarter(roomID uint32) error {
 			return err
 		}
 
-		nextIs1P := determineNextActor(characters, gameData.Is1PTurn)
+		nextIs1P := determineNextActor(&gameData, characters)
 		return tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Update("is_1p_turn", nextIs1P).Error
 	})
 }
 
-func determineNextActor(characters []model.UniqueCharacter, currentIs1PTurn bool) bool {
+func determineNextActor(gameData *model.GameData, characters []model.UniqueCharacter) bool {
+	// ユーザー要望：偶数回のターン（１サイクル）が終了したとき、次とその次のプレイヤーをきめる。両方同じはダメ。
+	// ロジック：
+	// 奇数ターン終了時（今がTurn 1, 3...）：必ず相手に回す（これで次とその次が異なることを保証）
+	// 偶数ターン終了時（今がTurn 2, 4...）：コスト計算で次のサイクルのリーダーを決める
+
+	// gameData.Turn は現在のターン数
+	isOddTurn := gameData.Turn%2 != 0
+
+	if isOddTurn {
+		// 奇数ターンの次は強制的に交代
+		return !gameData.Is1PTurn
+	}
+
+	// 偶数ターン終了時：コスト計算
 	p1Min, has1P := minAliveMoveCost(characters, true)
 	p2Min, has2P := minAliveMoveCost(characters, false)
 
@@ -434,7 +468,7 @@ func determineNextActor(characters []model.UniqueCharacter, currentIs1PTurn bool
 		return false
 	}
 	if !has1P && !has2P {
-		return currentIs1PTurn
+		return !gameData.Is1PTurn
 	}
 
 	if p1Min < p2Min {
@@ -444,7 +478,8 @@ func determineNextActor(characters []model.UniqueCharacter, currentIs1PTurn bool
 		return false
 	}
 
-	return randomFirstPlayer(currentIs1PTurn)
+	// コスト同値なら強制交代
+	return !gameData.Is1PTurn
 }
 
 func randomFirstPlayer(fallback bool) bool {

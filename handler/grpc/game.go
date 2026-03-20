@@ -65,6 +65,10 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		Is_1PTurn:   m.Is1PTurn,
 		TurnStartAt: timestamppb.New(m.TurnStartAt),
 		IsFinished:  m.IsFinished,
+		P1RateDelta:  int32(m.Player1RateDelta),
+		P2RateDelta:  int32(m.Player2RateDelta),
+		P1Rate:       int32(m.Player1Rate),
+		P2Rate:       int32(m.Player2Rate),
 	}
 
 	if m.WinnerPlayerID != nil {

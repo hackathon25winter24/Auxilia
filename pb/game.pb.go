@@ -482,6 +482,10 @@ type GameDataResponse struct {
 	Grids          []*GridInfo            `protobuf:"bytes,15,rep,name=grids,proto3" json:"grids,omitempty"`
 	Cost_1P        uint32                 `protobuf:"varint,16,opt,name=cost_1p,json=cost1p,proto3" json:"cost_1p,omitempty"`
 	Cost_2P        uint32                 `protobuf:"varint,17,opt,name=cost_2p,json=cost2p,proto3" json:"cost_2p,omitempty"`
+	P1RateDelta    int32                  `protobuf:"varint,18,opt,name=p1_rate_delta,json=p1RateDelta,proto3" json:"p1_rate_delta,omitempty"`
+	P2RateDelta    int32                  `protobuf:"varint,19,opt,name=p2_rate_delta,json=p2RateDelta,proto3" json:"p2_rate_delta,omitempty"`
+	P1Rate         int32                  `protobuf:"varint,20,opt,name=p1_rate,json=p1Rate,proto3" json:"p1_rate,omitempty"`
+	P2Rate         int32                  `protobuf:"varint,21,opt,name=p2_rate,json=p2Rate,proto3" json:"p2_rate,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -631,6 +635,34 @@ func (x *GameDataResponse) GetCost_1P() uint32 {
 func (x *GameDataResponse) GetCost_2P() uint32 {
 	if x != nil {
 		return x.Cost_2P
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetP1RateDelta() int32 {
+	if x != nil {
+		return x.P1RateDelta
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetP2RateDelta() int32 {
+	if x != nil {
+		return x.P2RateDelta
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetP1Rate() int32 {
+	if x != nil {
+		return x.P1Rate
+	}
+	return 0
+}
+
+func (x *GameDataResponse) GetP2Rate() int32 {
+	if x != nil {
+		return x.P2Rate
 	}
 	return 0
 }

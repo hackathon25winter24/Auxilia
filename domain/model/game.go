@@ -21,6 +21,11 @@ type GameData struct {
 	WinnerPlayerID *string
 	FinishedAt     *time.Time
 
+	Player1RateDelta int
+	Player2RateDelta int
+	Player1Rate      int
+	Player2Rate      int
+
 	Characters []UniqueCharacter `gorm:"foreignKey:RoomID;references:RoomID"`
 	Grids      []Grid            `gorm:"foreignKey:RoomID;references:RoomID"`
 }
@@ -90,6 +95,7 @@ var CharacterHPs = map[uint]int{
 	7: 300,
 	8: 100,
 	9: 200,
+	10: 200,
 }
 
 var CharacterMoveCosts = map[uint]int{
@@ -103,4 +109,5 @@ var CharacterMoveCosts = map[uint]int{
 	7: 5,
 	8: 10,
 	9: 5,
+	10: 10,
 }
