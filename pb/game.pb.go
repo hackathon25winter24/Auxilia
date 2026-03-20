@@ -228,6 +228,15 @@ func (x *PlayerAction) GetAttack() *AttackAction {
 	return nil
 }
 
+func (x *PlayerAction) GetGridUpdate() *GridUpdateAction {
+	if x != nil {
+		if x, ok := x.Action.(*PlayerAction_GridUpdate); ok {
+			return x.GridUpdate
+		}
+	}
+	return nil
+}
+
 type isPlayerAction_Action interface {
 	isPlayerAction_Action()
 }
@@ -244,11 +253,38 @@ type PlayerAction_Attack struct {
 	Attack *AttackAction `protobuf:"bytes,5,opt,name=attack,proto3,oneof"`
 }
 
+type PlayerAction_GridUpdate struct {
+	GridUpdate *GridUpdateAction `protobuf:"bytes,6,opt,name=grid_update,json=gridUpdate,proto3,oneof"`
+}
+
 func (*PlayerAction_Move) isPlayerAction_Action() {}
 
 func (*PlayerAction_EndTurn) isPlayerAction_Action() {}
 
 func (*PlayerAction_Attack) isPlayerAction_Action() {}
+
+func (*PlayerAction_GridUpdate) isPlayerAction_Action() {}
+
+type GridUpdateAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Grids         []*GridInfo            `protobuf:"bytes,1,rep,name=grids,proto3" json:"grids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GridUpdateAction) Reset() {
+	*x = GridUpdateAction{}
+}
+func (x *GridUpdateAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+func (*GridUpdateAction) ProtoMessage() {}
+func (x *GridUpdateAction) ProtoReflect() protoreflect.Message {
+	return nil // Mock implementation
+}
+func (*GridUpdateAction) Descriptor() ([]byte, []int) {
+	return nil, nil // Mock implementation
+}
 
 type MoveAction struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
