@@ -299,7 +299,7 @@ func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
 			return err
 		}
 
-		nextIs1P := determineNextActor(characters, gameData.Is1PTurn)
+		nextIs1P := determineNextActor(&gameData, characters)
 		return tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Updates(map[string]any{
