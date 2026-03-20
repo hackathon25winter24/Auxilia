@@ -367,7 +367,9 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		return err
 	}
 
-	newRate1, newRate2 := calculateEloRates(player1.Rate, player2.Rate, score1, score2)
+	oldRate1 := player1.Rate
+	oldRate2 := player2.Rate
+	newRate1, newRate2 := calculateEloRates(oldRate1, oldRate2, score1, score2)
 	player1.Rate = newRate1
 	player2.Rate = newRate2
 	player1.NumBattles++
@@ -379,8 +381,8 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 	}
 
 	// レート変動値と更新後のレートを GameData に記録
-	gameData.Player1RateDelta = newRate1 - player1.Rate
-	gameData.Player2RateDelta = newRate2 - player2.Rate
+	gameData.Player1RateDelta = newRate1 - oldRate1
+	gameData.Player2RateDelta = newRate2 - oldRate2
 	gameData.Player1Rate = newRate1
 	gameData.Player2Rate = newRate2
 
