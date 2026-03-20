@@ -26,11 +26,13 @@ type GameData struct {
 }
 
 type Grid struct {
-	ID        uint `gorm:"primaryKey"`
-	RoomID    uint `gorm:"index"`
-	PositionX uint
-	PositionY uint
-	GridType  int32
+	ID            uint `gorm:"primaryKey"`
+	RoomID        uint `gorm:"index"`
+	PositionX     uint
+	PositionY     uint
+	GridType      int32
+	IsSelected    bool
+	IsAttackRange bool
 }
 
 // TableName overrides the table name used by GORM

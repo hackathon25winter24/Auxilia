@@ -94,6 +94,8 @@ message GridInfo {
   uint32 position_x = 1;
   uint32 position_y = 2;
   int32 grid_type = 3;
+  bool is_selected = 4;
+  bool is_attack_range = 5;
 }
 
 message UniqueCharacter {

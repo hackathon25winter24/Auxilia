@@ -96,9 +96,11 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 
 	for _, grid := range m.Grids {
 		res.Grids = append(res.Grids, &pb.GridInfo{
-			PositionX: uint32(grid.PositionX),
-			PositionY: uint32(grid.PositionY),
-			GridType:  grid.GridType,
+			PositionX:     uint32(grid.PositionX),
+			PositionY:     uint32(grid.PositionY),
+			GridType:      grid.GridType,
+			IsSelected:    grid.IsSelected,
+			IsAttackRange: grid.IsAttackRange,
 		})
 	}
 
@@ -242,9 +244,11 @@ func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.PlayerActio
 	var modelGrids []model.Grid
 	for _, g := range gridUpdate.Grids {
 		modelGrids = append(modelGrids, model.Grid{
-			PositionX: uint(g.PositionX),
-			PositionY: uint(g.PositionY),
-			GridType:  g.GridType,
+			PositionX:     uint(g.PositionX),
+			PositionY:     uint(g.PositionY),
+			GridType:      g.GridType,
+			IsSelected:    g.IsSelected,
+			IsAttackRange: g.IsAttackRange,
 		})
 	}
 

@@ -544,7 +544,11 @@ func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids
 		for _, g := range grids {
 			if err := tx.Model(&model.Grid{}).
 				Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
-				Update("grid_type", g.GridType).Error; err != nil {
+				Updates(map[string]any{
+					"grid_type":       g.GridType,
+					"is_selected":     g.IsSelected,
+					"is_attack_range": g.IsAttackRange,
+				}).Error; err != nil {
 				return err
 			}
 		}
