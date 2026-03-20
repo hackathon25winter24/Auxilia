@@ -133,7 +133,7 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 		}
 
 		if gameData.IsFinished {
-			return nil
+			return domain.ErrForbiddenAction
 		}
 
 		is1PTurn := gameData.Is1PTurn
@@ -192,7 +192,7 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		}
 
 		if gameData.IsFinished {
-			return nil
+			return domain.ErrForbiddenAction
 		}
 
 		if attackType < model.AttackType0 || attackType > model.AttackType3 {
@@ -258,6 +258,23 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		}
 
 		if attackedCharacterUniqueID != 0 {
+			var attackedCharacter model.UniqueCharacter
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("id = ? AND room_id = ?", attackedCharacterUniqueID, roomID).
+				First(&attackedCharacter).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return domain.ErrCharacterNotFound
+				}
+				return err
+			}
+
+			if attackedCharacter.HP == 0 {
+				return domain.ErrForbiddenAction
+			}
+			if attackedCharacter.Is1P == character.Is1P {
+				return domain.ErrForbiddenAction
+			}
+
 			if err := tx.Model(&model.UniqueCharacter{}).
 				Where("id = ? AND room_id = ?", attackedCharacterUniqueID, roomID).
 				Update("hp", newHP).Error; err != nil {
