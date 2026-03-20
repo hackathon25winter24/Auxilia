@@ -30,6 +30,8 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		Player2ID:   p2ID,
 		BaseHP1:     200,
 		BaseHP2:     200,
+		Cost1P:      50,
+		Cost2P:      50,
 		Turn:        1,
 		Is1PTurn:    true,
 		TurnStartAt: now,
@@ -306,6 +308,8 @@ func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
 				"turn":          gameData.Turn + 1,
 				"is_1p_turn":    nextIs1P,
 				"turn_start_at": now,
+				"cost1_p":       50,
+				"cost2_p":       50,
 			}).Error
 	})
 	if err != nil {
