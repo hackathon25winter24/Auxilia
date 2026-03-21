@@ -83,6 +83,8 @@ func (r *BattleRepository) loadGameDataByRoomID(roomID uint32) (*model.GameData,
 		return nil, err
 	}
 
+	fmt.Printf("[loadGameDataByRoomID] Room: %d, Rates: P1=%d(%+d), P2=%d(%+d), Finished=%v\n", 
+		roomID, gameData.Player1Rate, gameData.Player1RateDelta, gameData.Player2Rate, gameData.Player2RateDelta, gameData.IsFinished)
 	return &gameData, err
 }
 
@@ -423,10 +425,10 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		updates["winner_player_id"] = nil
 	}
 
-	updates["Player1RateDelta"] = gameData.Player1RateDelta
-	updates["Player2RateDelta"] = gameData.Player2RateDelta
-	updates["Player1Rate"] = gameData.Player1Rate
-	updates["Player2Rate"] = gameData.Player2Rate
+	updates["player1_rate_delta"] = gameData.Player1RateDelta
+	updates["player2_rate_delta"] = gameData.Player2RateDelta
+	updates["player1_rate"] = gameData.Player1Rate
+	updates["player2_rate"] = gameData.Player2Rate
 
 	fmt.Printf("[finishGameAndUpdateRatings] RoomID: %d, P1Rate: %d (delta: %d), P2Rate: %d (delta: %d)\n",
 		gameData.RoomID, gameData.Player1Rate, gameData.Player1RateDelta, gameData.Player2Rate, gameData.Player2RateDelta)
