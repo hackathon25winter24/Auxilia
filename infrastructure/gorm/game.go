@@ -172,9 +172,9 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 			return err
 		}
 
-		costKey := "cost2_p"
+		costKey := "Cost2P"
 		if gameData.Player1ID == playerID {
-			costKey = "cost1_p"
+			costKey = "Cost1P"
 		}
 		return tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
@@ -258,16 +258,16 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			return err
 		}
 
-		costKey := "cost2_p"
+		costKey := "Cost2P"
 		if gameData.Player1ID == playerID {
-			costKey = "cost1_p"
+			costKey = "Cost1P"
 		}
 
 		if err := tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Updates(map[string]any{
-				"base_hp1": baseHP1,
-				"base_hp2": baseHP2,
+				"BaseHP1": baseHP1,
+				"BaseHP2": baseHP2,
 				costKey:    cost,
 			}).Error; err != nil {
 			return err
@@ -585,9 +585,9 @@ func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids
 			return nil
 		}
 
-		costKey := "cost2_p"
+		costKey := "Cost2P"
 		if gameData.Player1ID == playerID {
-			costKey = "cost1_p"
+			costKey = "Cost1P"
 		}
 		if err := tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
