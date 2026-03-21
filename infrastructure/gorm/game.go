@@ -3,6 +3,7 @@ package gorm
 import (
 	crand "crypto/rand"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -176,9 +177,10 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 		if gameData.Player1ID == playerID {
 			costKey = "Cost1P"
 		}
+		fmt.Printf("[ApplyMove] RoomID: %d, PlayerID: %s, Cost: %d (via %s)\n", roomID, playerID, cost, costKey)
 		return tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
-			Update(costKey, cost).Error
+			Updates(map[string]any{costKey: cost}).Error
 	})
 	if err != nil {
 		return nil, err
@@ -263,12 +265,14 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			costKey = "Cost1P"
 		}
 
+		fmt.Printf("[ApplyAttack] RoomID: %d, PlayerID: %s, Cost: %d (via %s), HP1: %d, HP2: %d\n", 
+			roomID, playerID, cost, costKey, baseHP1, baseHP2)
 		if err := tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Updates(map[string]any{
 				"BaseHP1": baseHP1,
 				"BaseHP2": baseHP2,
-				costKey:    cost,
+				costKey:   cost,
 			}).Error; err != nil {
 			return err
 		}
@@ -419,10 +423,13 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		updates["winner_player_id"] = nil
 	}
 
-	updates["player1_rate_delta"] = gameData.Player1RateDelta
-	updates["player2_rate_delta"] = gameData.Player2RateDelta
-	updates["player1_rate"] = gameData.Player1Rate
-	updates["player2_rate"] = gameData.Player2Rate
+	updates["Player1RateDelta"] = gameData.Player1RateDelta
+	updates["Player2RateDelta"] = gameData.Player2RateDelta
+	updates["Player1Rate"] = gameData.Player1Rate
+	updates["Player2Rate"] = gameData.Player2Rate
+
+	fmt.Printf("[finishGameAndUpdateRatings] RoomID: %d, P1Rate: %d (delta: %d), P2Rate: %d (delta: %d)\n",
+		gameData.RoomID, gameData.Player1Rate, gameData.Player1RateDelta, gameData.Player2Rate, gameData.Player2RateDelta)
 
 	if err := tx.Model(&model.GameData{}).
 		Where("id = ?", gameData.ID).
@@ -589,9 +596,10 @@ func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids
 		if gameData.Player1ID == playerID {
 			costKey = "Cost1P"
 		}
+		fmt.Printf("[ApplyGridUpdate] RoomID: %d, PlayerID: %s, Cost: %d (via %s)\n", roomID, playerID, cost, costKey)
 		if err := tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
-			Update(costKey, cost).Error; err != nil {
+			Updates(map[string]any{costKey: cost}).Error; err != nil {
 			return err
 		}
 

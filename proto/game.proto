@@ -89,6 +89,10 @@ message GameDataResponse {
   repeated GridInfo grids = 15;
   uint32 cost_1p = 16;
   uint32 cost_2p = 17;
+  int32 p1_rate_delta = 18;
+  int32 p2_rate_delta = 19;
+  int32 p1_rate = 20;
+  int32 p2_rate = 21;
 }
 
 message GridInfo {
