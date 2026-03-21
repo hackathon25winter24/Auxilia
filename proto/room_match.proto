@@ -35,7 +35,7 @@ message ListRoomMatchResponse {
     repeated RoomMatch rooms = 1;
 }
 
-message UpdateRoomMatchRequest {
+message UpdateRoomMatchRequest{
     int32 room_id = 1;
     string room_name = 2;
     string owner_id = 3;
