@@ -5,7 +5,8 @@ COPY . .
 RUN apk add --no-cache git
 RUN go mod download
 # プロジェクトルートの main.go をビルド
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+# GOGC=50, -p 1 を使ってビルド時のメモリ消費を極限まで抑える
+RUN GOGC=50 CGO_ENABLED=0 GOOS=linux go build -p 1 -ldflags="-s -w" -o main .
 
 # 実行ステージ
 FROM alpine:latest

@@ -184,7 +184,7 @@ func (h *BattleHandler) ApplyMove(ctx context.Context, req *pb.PlayerAction) (*p
 		return nil, status.Error(codes.InvalidArgument, "move is required")
 	}
 
-	gameData, err := h.repo.ApplyMove(req.RoomId, req.PlayerId, move.CharacterUniqueId, move.ToX, move.ToY)
+	gameData, err := h.repo.ApplyMove(req.RoomId, req.PlayerId, move.CharacterUniqueId, move.ToX, move.ToY, req.GetCost())
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (h *BattleHandler) ApplyAttack(ctx context.Context, req *pb.PlayerAction) (
 		return nil, status.Error(codes.InvalidArgument, "attack is required")
 	}
 
-	gameData, attackInfo, err := h.repo.ApplyAttack(req.RoomId, req.PlayerId, attack.AttackerCharacterUniqueId, attack.AttackType, attack.IsStarted, attack.BaseHp1, attack.BaseHp2, attack.AttackedCharacterUniqueId, attack.NewHp)
+	gameData, attackInfo, err := h.repo.ApplyAttack(req.RoomId, req.PlayerId, attack.AttackerCharacterUniqueId, attack.AttackType, attack.IsStarted, attack.BaseHp1, attack.BaseHp2, attack.AttackedCharacterUniqueId, attack.NewHp, req.GetCost())
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.PlayerActio
 		})
 	}
 
-	gameData, err := h.repo.ApplyGridUpdate(req.RoomId, req.PlayerId, modelGrids)
+	gameData, err := h.repo.ApplyGridUpdate(req.RoomId, req.PlayerId, modelGrids, req.GetCost())
 	if err != nil {
 		return nil, err
 	}

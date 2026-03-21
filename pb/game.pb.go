@@ -147,6 +147,7 @@ type PlayerAction struct {
 	//	*PlayerAction_Attack
 	//	*PlayerAction_GridUpdate
 	Action        isPlayerAction_Action `protobuf_oneof:"action"`
+	Cost          uint32                `protobuf:"varint,7,opt,name=cost,proto3" json:"cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -200,6 +201,13 @@ func (x *PlayerAction) GetAction() isPlayerAction_Action {
 		return x.Action
 	}
 	return nil
+}
+
+func (x *PlayerAction) GetCost() uint32 {
+	if x != nil {
+		return x.Cost
+	}
+	return 0
 }
 
 func (x *PlayerAction) GetMove() *MoveAction {
