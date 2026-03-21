@@ -47,6 +47,7 @@ message PlayerAction {
     AttackAction attack = 5;
     GridUpdateAction grid_update = 6;
   }
+  uint32 cost = 7;
 }
 
 message GridUpdateAction {

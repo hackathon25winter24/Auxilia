@@ -120,7 +120,7 @@ func (r *BattleRepository) RegisterCharacters(roomID uint32, is1P bool, charIDs 
 	return characters, nil
 }
 
-func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUniqueID, toX, toY uint32) (*model.GameData, error) {
+func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUniqueID, toX, toY uint32, cost uint32) (*model.GameData, error) {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -163,12 +163,22 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 			return domain.ErrForbiddenAction
 		}
 
-		return tx.Model(&model.UniqueCharacter{}).
+		if err := tx.Model(&model.UniqueCharacter{}).
 			Where("id = ?", character.ID).
 			Updates(map[string]any{
 				"position_x": toX,
 				"position_y": toY,
-			}).Error
+			}).Error; err != nil {
+			return err
+		}
+
+		costKey := "cost2_p"
+		if gameData.Player1ID == playerID {
+			costKey = "cost1_p"
+		}
+		return tx.Model(&model.GameData{}).
+			Where("id = ?", gameData.ID).
+			Update(costKey, cost).Error
 	})
 	if err != nil {
 		return nil, err
@@ -177,7 +187,7 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 	return r.GetGameDataByRoomID(roomID)
 }
 
-func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32) (*model.GameData, *model.AttackInfo, error) {
+func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32, cost uint32) (*model.GameData, *model.AttackInfo, error) {
 	var createdAttackInfo *model.AttackInfo
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -248,11 +258,17 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			return err
 		}
 
+		costKey := "cost2_p"
+		if gameData.Player1ID == playerID {
+			costKey = "cost1_p"
+		}
+
 		if err := tx.Model(&model.GameData{}).
 			Where("id = ?", gameData.ID).
 			Updates(map[string]any{
 				"base_hp1": baseHP1,
 				"base_hp2": baseHP2,
+				costKey:    cost,
 			}).Error; err != nil {
 			return err
 		}
@@ -553,7 +569,7 @@ func minAliveMoveCost(characters []model.UniqueCharacter, is1P bool) (int, bool)
 	return minCost, found
 }
 
-func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids []model.Grid) (*model.GameData, error) {
+func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids []model.Grid, cost uint32) (*model.GameData, error) {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -567,6 +583,16 @@ func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids
 
 		if gameData.IsFinished {
 			return nil
+		}
+
+		costKey := "cost2_p"
+		if gameData.Player1ID == playerID {
+			costKey = "cost1_p"
+		}
+		if err := tx.Model(&model.GameData{}).
+			Where("id = ?", gameData.ID).
+			Update(costKey, cost).Error; err != nil {
+			return err
 		}
 
 		// ターンチェック (オプションだが他のApply系と同様に実装)
