@@ -74,3 +74,30 @@ func (s *RoomMatchServer) ListRoomMatch(ctx context.Context, req *pb.ListRoomMat
 		Rooms: pbRooms,
 	}, nil
 }
+
+func (s *RoomMatchServer) UpdateRoomMatch(ctx context.Context, req *pb.UpdateRoomMatchRequest) (*pb.RoomMatchResponse, error) {
+	if utf8.RuneCountInString(req.RoomName) > 10 {
+		return nil, status.Error(codes.InvalidArgument, "部屋名は10文字以内で入力してください")
+	}
+
+	room := &model.RoomMatch{
+		ID:       int(req.RoomId),
+		RoomName: req.RoomName,
+		OwnerID:  req.OwnerId,
+		IsGaming: req.IsGaming,
+	}
+
+	err := s.repo.UpdateRoomMatch(room)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "部屋情報の更新に失敗しました: %v", err)
+	}
+
+	return &pb.RoomMatchResponse{
+		Room: &pb.RoomMatch{
+			RoomId:   int32(room.ID),
+			RoomName: room.RoomName,
+			OwnerId:  room.OwnerID,
+			IsGaming: room.IsGaming,
+		},
+	}, nil
+}
