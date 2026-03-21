@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	RoomMatchService_CreateRoomMatch_FullMethodName = "/roommatch.RoomMatchService/CreateRoomMatch"
 	RoomMatchService_ListRoomMatch_FullMethodName   = "/roommatch.RoomMatchService/ListRoomMatch"
+	RoomMatchService_UpdateRoomMatch_FullMethodName = "/roommatch.RoomMatchService/UpdateRoomMatch"
 )
 
 // RoomMatchServiceClient is the client API for RoomMatchService service.
@@ -29,6 +30,7 @@ const (
 type RoomMatchServiceClient interface {
 	CreateRoomMatch(ctx context.Context, in *CreateRoomMatchRequest, opts ...grpc.CallOption) (*RoomMatchResponse, error)
 	ListRoomMatch(ctx context.Context, in *ListRoomMatchRequest, opts ...grpc.CallOption) (*ListRoomMatchResponse, error)
+	UpdateRoomMatch(ctx context.Context, in *UpdateRoomMatchRequest, opts ...grpc.CallOption) (*RoomMatchResponse, error)
 }
 
 type roomMatchServiceClient struct {
@@ -59,12 +61,23 @@ func (c *roomMatchServiceClient) ListRoomMatch(ctx context.Context, in *ListRoom
 	return out, nil
 }
 
+func (c *roomMatchServiceClient) UpdateRoomMatch(ctx context.Context, in *UpdateRoomMatchRequest, opts ...grpc.CallOption) (*RoomMatchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RoomMatchResponse)
+	err := c.cc.Invoke(ctx, RoomMatchService_UpdateRoomMatch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoomMatchServiceServer is the server API for RoomMatchService service.
 // All implementations must embed UnimplementedRoomMatchServiceServer
 // for forward compatibility.
 type RoomMatchServiceServer interface {
 	CreateRoomMatch(context.Context, *CreateRoomMatchRequest) (*RoomMatchResponse, error)
 	ListRoomMatch(context.Context, *ListRoomMatchRequest) (*ListRoomMatchResponse, error)
+	UpdateRoomMatch(context.Context, *UpdateRoomMatchRequest) (*RoomMatchResponse, error)
 	mustEmbedUnimplementedRoomMatchServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedRoomMatchServiceServer) CreateRoomMatch(context.Context, *Cre
 }
 func (UnimplementedRoomMatchServiceServer) ListRoomMatch(context.Context, *ListRoomMatchRequest) (*ListRoomMatchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListRoomMatch not implemented")
+}
+func (UnimplementedRoomMatchServiceServer) UpdateRoomMatch(context.Context, *UpdateRoomMatchRequest) (*RoomMatchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRoomMatch not implemented")
 }
 func (UnimplementedRoomMatchServiceServer) mustEmbedUnimplementedRoomMatchServiceServer() {}
 func (UnimplementedRoomMatchServiceServer) testEmbeddedByValue()                          {}
@@ -138,6 +154,24 @@ func _RoomMatchService_ListRoomMatch_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomMatchService_UpdateRoomMatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoomMatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomMatchServiceServer).UpdateRoomMatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoomMatchService_UpdateRoomMatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomMatchServiceServer).UpdateRoomMatch(ctx, req.(*UpdateRoomMatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoomMatchService_ServiceDesc is the grpc.ServiceDesc for RoomMatchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var RoomMatchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRoomMatch",
 			Handler:    _RoomMatchService_ListRoomMatch_Handler,
+		},
+		{
+			MethodName: "UpdateRoomMatch",
+			Handler:    _RoomMatchService_UpdateRoomMatch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

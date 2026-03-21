@@ -273,6 +273,73 @@ func (x *ListRoomMatchResponse) GetRooms() []*RoomMatch {
 	return nil
 }
 
+type UpdateRoomMatchRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoomId        int32                  `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
+	RoomName      string                 `protobuf:"bytes,2,opt,name=room_name,json=roomName,proto3" json:"room_name,omitempty"`
+	OwnerId       string                 `protobuf:"bytes,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	IsGaming      bool                   `protobuf:"varint,4,opt,name=is_gaming,json=isGaming,proto3" json:"is_gaming,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateRoomMatchRequest) Reset() {
+	*x = UpdateRoomMatchRequest{}
+	mi := &file_proto_room_match_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateRoomMatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateRoomMatchRequest) ProtoMessage() {}
+
+func (x *UpdateRoomMatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_room_match_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (*UpdateRoomMatchRequest) Descriptor() ([]byte, []int) {
+	return file_proto_room_match_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdateRoomMatchRequest) GetRoomId() int32 {
+	if x != nil {
+		return x.RoomId
+	}
+	return 0
+}
+
+func (x *UpdateRoomMatchRequest) GetRoomName() string {
+	if x != nil {
+		return x.RoomName
+	}
+	return ""
+}
+
+func (x *UpdateRoomMatchRequest) GetOwnerId() string {
+	if x != nil {
+		return x.OwnerId
+	}
+	return ""
+}
+
+func (x *UpdateRoomMatchRequest) GetIsGaming() bool {
+	if x != nil {
+		return x.IsGaming
+	}
+	return false
+}
+
 var File_proto_room_match_proto protoreflect.FileDescriptor
 
 const file_proto_room_match_proto_rawDesc = "" +
@@ -309,13 +376,14 @@ func file_proto_room_match_proto_rawDescGZIP() []byte {
 	return file_proto_room_match_proto_rawDescData
 }
 
-var file_proto_room_match_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_room_match_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_room_match_proto_goTypes = []any{
 	(*RoomMatch)(nil),              // 0: roommatch.RoomMatch
 	(*CreateRoomMatchRequest)(nil), // 1: roommatch.CreateRoomMatchRequest
 	(*RoomMatchResponse)(nil),      // 2: roommatch.RoomMatchResponse
 	(*ListRoomMatchRequest)(nil),   // 3: roommatch.ListRoomMatchRequest
 	(*ListRoomMatchResponse)(nil),  // 4: roommatch.ListRoomMatchResponse
+	(*UpdateRoomMatchRequest)(nil), // 5: roommatch.UpdateRoomMatchRequest
 }
 var file_proto_room_match_proto_depIdxs = []int32{
 	0, // 0: roommatch.RoomMatchResponse.room:type_name -> roommatch.RoomMatch
@@ -342,7 +410,7 @@ func file_proto_room_match_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_room_match_proto_rawDesc), len(file_proto_room_match_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
