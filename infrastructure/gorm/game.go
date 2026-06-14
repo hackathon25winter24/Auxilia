@@ -29,10 +29,10 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		RoomID:      uint(roomID),
 		Player1ID:   p1ID,
 		Player2ID:   p2ID,
-		BaseHP1:     200,
-		BaseHP2:     200,
-		Cost1P:      50,
-		Cost2P:      50,
+		BaseHP1:     model.DefaultBaseHP,
+		BaseHP2:     model.DefaultBaseHP,
+		Cost1P:      model.DefaultCost,
+		Cost2P:      model.DefaultCost,
 		Turn:        1,
 		Is1PTurn:    true,
 		TurnStartAt: now,
@@ -104,7 +104,7 @@ func (r *BattleRepository) RegisterCharacters(roomID uint32, is1P bool, charIDs 
 			RoomID:      uint(roomID),
 			Is1P:        is1P,
 			CharacterID: uint(charID),
-			HP:          uint(model.CharacterHPs[uint(charID)]),
+			HP:          uint(model.DefaultCharacterHPs[uint(charID)]),
 			PositionX:   charPos[i].X,
 			PositionY:   charPos[i].Y,
 		}
@@ -564,7 +564,7 @@ func minAliveMoveCost(characters []model.UniqueCharacter, is1P bool) (int, bool)
 			continue
 		}
 
-		cost, ok := model.CharacterMoveCosts[character.CharacterID]
+		cost, ok := model.DefaultCharacterMoveCosts[character.CharacterID]
 		if !ok {
 			cost = 10
 		}

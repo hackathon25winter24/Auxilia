@@ -23,6 +23,8 @@ service BattleService {
   rpc ApplyAttack(PlayerAction) returns (GameDataResponse);
   rpc EndTurn(PlayerAction) returns (GameDataResponse);
   rpc ApplyGridUpdate(PlayerAction) returns (GameDataResponse);
+
+  rpc FetchActionLog(FetchActionLogRequest) returns (GameActionLog);
 }
 
 // 試合登録用リクエスト
@@ -93,6 +95,7 @@ message GameDataResponse {
   int32 p2_rate_delta = 19;
   int32 p1_rate = 20;
   int32 p2_rate = 21;
+  GameActionLog game_action_log = 22;
 }
 
 message GridInfo {
@@ -142,4 +145,28 @@ message RegisterCharactersRequest {
 
 message RegisterCharactersResponse {
   repeated UniqueCharacter registered_characters = 1;
+}
+
+message FetchActionLogRequest {
+  uint32 room_id = 1;
+  uint32 sequence = 2; // 消失した通し番号を指定してピンポイントに貰う
+}
+
+message GameActionLog {
+  uint32 id = 1;
+  uint32 room_id = 2;
+  uint32 sequence = 3;       // 通し番号（1, 2, 3...）
+  string player_id = 4;      // 行動したプレイヤーID
+  string action_type = 5;    // "MOVE" または "ATTACK"
+
+  uint32 actor_character_unique_id = 6; // 行動したキャラのID
+
+  //（action_type == "MOVE" の時のみ使用）
+  uint32 to_x = 7;
+  uint32 to_y = 8;
+
+  //（action_type == "ATTACK" の時のみ使用）
+  int32 attack_type = 9;
+
+  repeated uint32 target_character_unique_ids = 10; 
 }

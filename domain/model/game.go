@@ -28,6 +28,9 @@ type GameData struct {
 
 	Characters []UniqueCharacter `gorm:"foreignKey:RoomID;references:RoomID"`
 	Grids      []Grid            `gorm:"foreignKey:RoomID;references:RoomID"`
+
+	CurrentSequence uint `gorm:"default:0"`
+	CurrentAction GameActionLog `gorm:"foreignKey:RoomID;references:RoomID"`
 }
 
 type Grid struct {
@@ -72,6 +75,26 @@ type Position struct {
 	Y uint
 }
 
+type GameActionLog struct {
+	ID        uint   `gorm:"primaryKey"`
+	RoomID    uint   `gorm:"uniqueIndex:idx_room_seq"` // 部屋IDと通し番号の複合インデックス
+	Sequence  uint   `gorm:"uniqueIndex:idx_room_seq"` // 💡 通し番号（1, 2, 3... と増えていく）
+	PlayerID  string // 誰が実行したか
+
+	ActionType             string // "MOVE" または "ATTACK"
+	ActorCharacterUniqueID uint   // 行動したキャラのID
+	
+	// 移動用
+	ToX uint
+	ToY uint
+
+	// 攻撃用
+	AttackType         int
+	TargetCharacterIDs string // "3,5,6" のようなカンマ区切り文字列
+}
+
+
+//Default values for game initialization
 var DefaultPoints1P = []Position{
 	{X: 0, Y: 0},
 	{X: 1, Y: 2},
@@ -84,7 +107,10 @@ var DefaultPoints2P = []Position{
 	{X: 7, Y: 4},
 }
 
-var CharacterHPs = map[uint]int{
+var DefaultBaseHP = uint(200)
+var DefaultCost = uint(50)
+
+var DefaultCharacterHPs = map[uint]int{
 	0: 150,
 	1: 300,
 	2: 150,
@@ -98,7 +124,7 @@ var CharacterHPs = map[uint]int{
 	10: 200,
 }
 
-var CharacterMoveCosts = map[uint]int{
+var DefaultCharacterMoveCosts = map[uint]int{
 	0: 10,
 	1: 10,
 	2: 7,
