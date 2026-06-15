@@ -25,8 +25,10 @@ const (
 	BattleService_StreamGame_FullMethodName         = "/game.network.BattleService/StreamGame"
 	BattleService_ApplyMove_FullMethodName          = "/game.network.BattleService/ApplyMove"
 	BattleService_ApplyAttack_FullMethodName        = "/game.network.BattleService/ApplyAttack"
-	BattleService_EndTurn_FullMethodName            = "/game.network.BattleService/EndTurn"
 	BattleService_ApplyGridUpdate_FullMethodName    = "/game.network.BattleService/ApplyGridUpdate"
+	BattleService_ApplyEffect_FullMethodName        = "/game.network.BattleService/ApplyEffect"
+	BattleService_EndTurn_FullMethodName            = "/game.network.BattleService/EndTurn"
+	BattleService_NewTurn_FullMethodName            = "/game.network.BattleService/NewTurn"
 	BattleService_FetchActionLog_FullMethodName     = "/game.network.BattleService/FetchActionLog"
 )
 
@@ -43,10 +45,12 @@ type BattleServiceClient interface {
 	// ルームIDを指定して受信を開始する
 	StreamGame(ctx context.Context, in *StreamGameRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GameDataResponse], error)
 	// アクション送信（個別の単方向RPC）
-	ApplyMove(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
-	ApplyAttack(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
-	EndTurn(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
-	ApplyGridUpdate(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error)
+	ApplyMove(ctx context.Context, in *MoveAction, opts ...grpc.CallOption) (*AcceptResponse, error)
+	ApplyAttack(ctx context.Context, in *AttackAction, opts ...grpc.CallOption) (*AcceptResponse, error)
+	ApplyGridUpdate(ctx context.Context, in *GridUpdateAction, opts ...grpc.CallOption) (*AcceptResponse, error)
+	ApplyEffect(ctx context.Context, in *ApplyEffectRequest, opts ...grpc.CallOption) (*AcceptResponse, error)
+	EndTurn(ctx context.Context, in *EndTurnRequest, opts ...grpc.CallOption) (*AcceptResponse, error)
+	NewTurn(ctx context.Context, in *NewTurnRequest, opts ...grpc.CallOption) (*AcceptResponse, error)
 	FetchActionLog(ctx context.Context, in *FetchActionLogRequest, opts ...grpc.CallOption) (*GameActionLog, error)
 }
 
@@ -107,9 +111,9 @@ func (c *battleServiceClient) StreamGame(ctx context.Context, in *StreamGameRequ
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BattleService_StreamGameClient = grpc.ServerStreamingClient[GameDataResponse]
 
-func (c *battleServiceClient) ApplyMove(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+func (c *battleServiceClient) ApplyMove(ctx context.Context, in *MoveAction, opts ...grpc.CallOption) (*AcceptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GameDataResponse)
+	out := new(AcceptResponse)
 	err := c.cc.Invoke(ctx, BattleService_ApplyMove_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -117,9 +121,9 @@ func (c *battleServiceClient) ApplyMove(ctx context.Context, in *PlayerAction, o
 	return out, nil
 }
 
-func (c *battleServiceClient) ApplyAttack(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+func (c *battleServiceClient) ApplyAttack(ctx context.Context, in *AttackAction, opts ...grpc.CallOption) (*AcceptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GameDataResponse)
+	out := new(AcceptResponse)
 	err := c.cc.Invoke(ctx, BattleService_ApplyAttack_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -127,9 +131,29 @@ func (c *battleServiceClient) ApplyAttack(ctx context.Context, in *PlayerAction,
 	return out, nil
 }
 
-func (c *battleServiceClient) EndTurn(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+func (c *battleServiceClient) ApplyGridUpdate(ctx context.Context, in *GridUpdateAction, opts ...grpc.CallOption) (*AcceptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GameDataResponse)
+	out := new(AcceptResponse)
+	err := c.cc.Invoke(ctx, BattleService_ApplyGridUpdate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *battleServiceClient) ApplyEffect(ctx context.Context, in *ApplyEffectRequest, opts ...grpc.CallOption) (*AcceptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptResponse)
+	err := c.cc.Invoke(ctx, BattleService_ApplyEffect_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *battleServiceClient) EndTurn(ctx context.Context, in *EndTurnRequest, opts ...grpc.CallOption) (*AcceptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptResponse)
 	err := c.cc.Invoke(ctx, BattleService_EndTurn_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -137,10 +161,10 @@ func (c *battleServiceClient) EndTurn(ctx context.Context, in *PlayerAction, opt
 	return out, nil
 }
 
-func (c *battleServiceClient) ApplyGridUpdate(ctx context.Context, in *PlayerAction, opts ...grpc.CallOption) (*GameDataResponse, error) {
+func (c *battleServiceClient) NewTurn(ctx context.Context, in *NewTurnRequest, opts ...grpc.CallOption) (*AcceptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GameDataResponse)
-	err := c.cc.Invoke(ctx, BattleService_ApplyGridUpdate_FullMethodName, in, out, cOpts...)
+	out := new(AcceptResponse)
+	err := c.cc.Invoke(ctx, BattleService_NewTurn_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,10 +194,12 @@ type BattleServiceServer interface {
 	// ルームIDを指定して受信を開始する
 	StreamGame(*StreamGameRequest, grpc.ServerStreamingServer[GameDataResponse]) error
 	// アクション送信（個別の単方向RPC）
-	ApplyMove(context.Context, *PlayerAction) (*GameDataResponse, error)
-	ApplyAttack(context.Context, *PlayerAction) (*GameDataResponse, error)
-	EndTurn(context.Context, *PlayerAction) (*GameDataResponse, error)
-	ApplyGridUpdate(context.Context, *PlayerAction) (*GameDataResponse, error)
+	ApplyMove(context.Context, *MoveAction) (*AcceptResponse, error)
+	ApplyAttack(context.Context, *AttackAction) (*AcceptResponse, error)
+	ApplyGridUpdate(context.Context, *GridUpdateAction) (*AcceptResponse, error)
+	ApplyEffect(context.Context, *ApplyEffectRequest) (*AcceptResponse, error)
+	EndTurn(context.Context, *EndTurnRequest) (*AcceptResponse, error)
+	NewTurn(context.Context, *NewTurnRequest) (*AcceptResponse, error)
 	FetchActionLog(context.Context, *FetchActionLogRequest) (*GameActionLog, error)
 	mustEmbedUnimplementedBattleServiceServer()
 }
@@ -197,17 +223,23 @@ func (UnimplementedBattleServiceServer) RegisterCharacters(context.Context, *Reg
 func (UnimplementedBattleServiceServer) StreamGame(*StreamGameRequest, grpc.ServerStreamingServer[GameDataResponse]) error {
 	return status.Error(codes.Unimplemented, "method StreamGame not implemented")
 }
-func (UnimplementedBattleServiceServer) ApplyMove(context.Context, *PlayerAction) (*GameDataResponse, error) {
+func (UnimplementedBattleServiceServer) ApplyMove(context.Context, *MoveAction) (*AcceptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ApplyMove not implemented")
 }
-func (UnimplementedBattleServiceServer) ApplyAttack(context.Context, *PlayerAction) (*GameDataResponse, error) {
+func (UnimplementedBattleServiceServer) ApplyAttack(context.Context, *AttackAction) (*AcceptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ApplyAttack not implemented")
 }
-func (UnimplementedBattleServiceServer) EndTurn(context.Context, *PlayerAction) (*GameDataResponse, error) {
+func (UnimplementedBattleServiceServer) ApplyGridUpdate(context.Context, *GridUpdateAction) (*AcceptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyGridUpdate not implemented")
+}
+func (UnimplementedBattleServiceServer) ApplyEffect(context.Context, *ApplyEffectRequest) (*AcceptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ApplyEffect not implemented")
+}
+func (UnimplementedBattleServiceServer) EndTurn(context.Context, *EndTurnRequest) (*AcceptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method EndTurn not implemented")
 }
-func (UnimplementedBattleServiceServer) ApplyGridUpdate(context.Context, *PlayerAction) (*GameDataResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ApplyGridUpdate not implemented")
+func (UnimplementedBattleServiceServer) NewTurn(context.Context, *NewTurnRequest) (*AcceptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method NewTurn not implemented")
 }
 func (UnimplementedBattleServiceServer) FetchActionLog(context.Context, *FetchActionLogRequest) (*GameActionLog, error) {
 	return nil, status.Error(codes.Unimplemented, "method FetchActionLog not implemented")
@@ -299,7 +331,7 @@ func _BattleService_StreamGame_Handler(srv interface{}, stream grpc.ServerStream
 type BattleService_StreamGameServer = grpc.ServerStreamingServer[GameDataResponse]
 
 func _BattleService_ApplyMove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlayerAction)
+	in := new(MoveAction)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -311,13 +343,13 @@ func _BattleService_ApplyMove_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: BattleService_ApplyMove_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BattleServiceServer).ApplyMove(ctx, req.(*PlayerAction))
+		return srv.(BattleServiceServer).ApplyMove(ctx, req.(*MoveAction))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _BattleService_ApplyAttack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlayerAction)
+	in := new(AttackAction)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -329,31 +361,13 @@ func _BattleService_ApplyAttack_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: BattleService_ApplyAttack_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BattleServiceServer).ApplyAttack(ctx, req.(*PlayerAction))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BattleService_EndTurn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlayerAction)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BattleServiceServer).EndTurn(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BattleService_EndTurn_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BattleServiceServer).EndTurn(ctx, req.(*PlayerAction))
+		return srv.(BattleServiceServer).ApplyAttack(ctx, req.(*AttackAction))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _BattleService_ApplyGridUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PlayerAction)
+	in := new(GridUpdateAction)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -365,7 +379,61 @@ func _BattleService_ApplyGridUpdate_Handler(srv interface{}, ctx context.Context
 		FullMethod: BattleService_ApplyGridUpdate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BattleServiceServer).ApplyGridUpdate(ctx, req.(*PlayerAction))
+		return srv.(BattleServiceServer).ApplyGridUpdate(ctx, req.(*GridUpdateAction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BattleService_ApplyEffect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyEffectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).ApplyEffect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_ApplyEffect_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).ApplyEffect(ctx, req.(*ApplyEffectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BattleService_EndTurn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EndTurnRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).EndTurn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_EndTurn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).EndTurn(ctx, req.(*EndTurnRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BattleService_NewTurn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewTurnRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BattleServiceServer).NewTurn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BattleService_NewTurn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BattleServiceServer).NewTurn(ctx, req.(*NewTurnRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -416,12 +484,20 @@ var BattleService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _BattleService_ApplyAttack_Handler,
 		},
 		{
+			MethodName: "ApplyGridUpdate",
+			Handler:    _BattleService_ApplyGridUpdate_Handler,
+		},
+		{
+			MethodName: "ApplyEffect",
+			Handler:    _BattleService_ApplyEffect_Handler,
+		},
+		{
 			MethodName: "EndTurn",
 			Handler:    _BattleService_EndTurn_Handler,
 		},
 		{
-			MethodName: "ApplyGridUpdate",
-			Handler:    _BattleService_ApplyGridUpdate_Handler,
+			MethodName: "NewTurn",
+			Handler:    _BattleService_NewTurn_Handler,
 		},
 		{
 			MethodName: "FetchActionLog",

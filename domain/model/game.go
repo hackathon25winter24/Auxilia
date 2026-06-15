@@ -17,6 +17,8 @@ type GameData struct {
 	Turn           uint
 	Is1PTurn       bool `gorm:"column:is_1p_turn"`
 	TurnStartAt    time.Time
+	IsTurnEnded    bool
+
 	IsFinished     bool
 	WinnerPlayerID *string
 	FinishedAt     *time.Time
@@ -29,7 +31,6 @@ type GameData struct {
 	Characters []UniqueCharacter `gorm:"foreignKey:RoomID;references:RoomID"`
 	Grids      []Grid            `gorm:"foreignKey:RoomID;references:RoomID"`
 
-	CurrentSequence uint `gorm:"default:0"`
 	CurrentAction GameActionLog `gorm:"foreignKey:RoomID;references:RoomID"`
 }
 
@@ -75,6 +76,11 @@ type Position struct {
 	Y uint
 }
 
+type AttackInfoData struct {
+	AttackedCharacterID uint
+	NewHP               uint
+}
+
 type GameActionLog struct {
 	ID        uint   `gorm:"primaryKey"`
 	RoomID    uint   `gorm:"uniqueIndex:idx_room_seq"` // 部屋IDと通し番号の複合インデックス
@@ -91,6 +97,10 @@ type GameActionLog struct {
 	// 攻撃用
 	AttackType         int
 	TargetCharacterIDs string // "3,5,6" のようなカンマ区切り文字列
+
+	//特殊効果用
+	EffectType         int    `gorm:"column:effect_type"`
+	NewHP              uint   `gorm:"column:new_hp"`
 }
 
 

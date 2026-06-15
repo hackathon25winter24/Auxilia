@@ -19,11 +19,13 @@ service BattleService {
   rpc StreamGame(StreamGameRequest) returns (stream GameDataResponse);
 
   // アクション送信（個別の単方向RPC）
-  rpc ApplyMove(PlayerAction) returns (GameDataResponse);
-  rpc ApplyAttack(PlayerAction) returns (GameDataResponse);
-  rpc EndTurn(PlayerAction) returns (GameDataResponse);
-  rpc ApplyGridUpdate(PlayerAction) returns (GameDataResponse);
+  rpc ApplyMove(MoveAction) returns (AcceptResponse);
+  rpc ApplyAttack(AttackAction) returns (AcceptResponse);
+  rpc ApplyGridUpdate(GridUpdateAction) returns (AcceptResponse);
+  rpc ApplyEffect(ApplyEffectRequest) returns (AcceptResponse);
 
+  rpc EndTurn(EndTurnRequest) returns (AcceptResponse);
+  rpc NewTurn(NewTurnRequest) returns (AcceptResponse);
   rpc FetchActionLog(FetchActionLogRequest) returns (GameActionLog);
 }
 
@@ -39,37 +41,31 @@ message StreamGameRequest {
   string player_id = 2;
 }
 
-// プレイヤーのアクション（移動など）
-message PlayerAction {
+message GridUpdateAction {
   uint32 room_id = 1;
   string player_id = 2;
-  oneof action {
-    MoveAction move = 3;
-    bool end_turn = 4;
-    AttackAction attack = 5;
-    GridUpdateAction grid_update = 6;
-  }
-  uint32 cost = 7;
-}
-
-message GridUpdateAction {
-  repeated GridInfo grids = 1;
+  repeated GridInfo grids = 3;
 }
 
 message MoveAction {
-  uint32 character_unique_id = 1;
-  uint32 to_x = 2;
-  uint32 to_y = 3;
+  uint32 room_id = 1;
+  string player_id = 2;
+  uint32 character_id = 3;
+  uint32 to_x = 4;
+  uint32 to_y = 5;
 }
 
 message AttackAction {
-  uint32 attacker_character_unique_id = 1;
-  int32 attack_type = 2; // 0..3
-  bool is_started = 3;
-  uint32 base_hp1 = 4;
-  uint32 base_hp2 = 5;
-  uint32 attacked_character_unique_id = 6; // 攻撃対象キャラのユニークID
-  uint32 new_hp = 7;                        // フロント計算済みの攻撃後HP
+  uint32 room_id = 1;
+  string player_id = 2;
+  uint32 attacker_character_id = 3;
+  int32 attack_type = 4;
+  repeated AttackInfo attack_infos = 8;
+}
+
+message AttackInfo {
+  uint32 attacked_character_id = 1;//base1=98,base2=99
+  uint32 new_hp = 2; 
 }
 
 // 試合情報全体のレスポンス
@@ -96,6 +92,7 @@ message GameDataResponse {
   int32 p1_rate = 20;
   int32 p2_rate = 21;
   GameActionLog game_action_log = 22;
+  bool is_turn_ended = 23;
 }
 
 message GridInfo {
@@ -121,16 +118,6 @@ message CharacterCondition {
   uint32 id = 1;
   int32 condition_id = 2;
   int32 lasting_turn = 3;
-}
-
-message AttackInfo {
-  uint32 id = 1;
-  uint32 room_id = 2;
-  int32 attacker_side = 3;
-  bool is_started = 4;
-  uint32 attacker_character_id = 5;
-  int32 attack_type = 6;
-  google.protobuf.Timestamp attacked_at = 7;
 }
 
 message GetGameDataRequest {
@@ -169,4 +156,27 @@ message GameActionLog {
   int32 attack_type = 9;
 
   repeated uint32 target_character_unique_ids = 10; 
+}
+
+message ApplyEffectRequest {
+  uint32 room_id = 1;
+  string player_id = 2;
+  uint32 character_id = 3; 
+  int32 effect_type = 4; 
+  uint32 new_hp = 5;              
+}
+
+message NewTurnRequest{
+  uint32 room_id = 1;
+  string player_id = 2;
+}
+
+message AcceptResponse {
+  bool success = 1;
+  string message = 2; // デバッグ用エラーメッセージなど
+}
+
+message EndTurnRequest{
+  uint32 room_id = 1;
+  string player_id = 2;
 }

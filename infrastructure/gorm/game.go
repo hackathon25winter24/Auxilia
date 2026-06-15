@@ -1,14 +1,15 @@
 package gorm
 
 import (
-	crand "crypto/rand"
+	//crand "crypto/rand"
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"auxilia/domain"
-	"auxilia/domain/model" // プロジェクト構造に合わせて調整してください
+	"auxilia/domain/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -36,7 +37,7 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		Turn:        1,
 		Is1PTurn:    true,
 		TurnStartAt: now,
-		// Characters は空の状態で開始
+		IsTurnEnded: false, // 💡 初期状態はfalse
 	}
 
 	var grids []model.Grid
@@ -51,7 +52,6 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 	}
 	gameData.Grids = grids
 
-	// キャラクター登録がないため、シンプルな Create で実装可能
 	if err := r.db.Create(gameData).Error; err != nil {
 		return nil, err
 	}
@@ -71,7 +71,6 @@ func (r *BattleRepository) GetGameDataByRoomID(roomID uint32) (*model.GameData, 
 func (r *BattleRepository) loadGameDataByRoomID(roomID uint32) (*model.GameData, error) {
 	var gameData model.GameData
 
-	// PreloadでCharactersとそのConditionsまで再帰的に取得
 	err := r.db.Preload("Characters.Conditions").Preload("Grids").
 		Where("room_id = ?", roomID).
 		First(&gameData).Error
@@ -83,15 +82,19 @@ func (r *BattleRepository) loadGameDataByRoomID(roomID uint32) (*model.GameData,
 		return nil, err
 	}
 
-	fmt.Printf("[loadGameDataByRoomID] Room: %d, Rates: P1=%d(%+d), P2=%d(%+d), Finished=%v\n", 
-		roomID, gameData.Player1Rate, gameData.Player1RateDelta, gameData.Player2Rate, gameData.Player2RateDelta, gameData.IsFinished)
-	return &gameData, err
+	var actionLog model.GameActionLog
+	if err := r.db.Where("room_id = ?", roomID).
+		Order("sequence DESC").
+		First(&actionLog).Error; err == nil {
+		gameData.CurrentAction = actionLog
+	}
+
+	return &gameData, nil
 }
 
 func (r *BattleRepository) RegisterCharacters(roomID uint32, is1P bool, charIDs []uint32) ([]model.UniqueCharacter, error) {
 	var characters []model.UniqueCharacter
 
-	// Y座標を1Pなら下側(0)、2Pなら上側(7)にするなどの初期配置ロジック
 	var charPos []model.Position
 	if is1P {
 		charPos = model.DefaultPoints1P
@@ -111,7 +114,6 @@ func (r *BattleRepository) RegisterCharacters(roomID uint32, is1P bool, charIDs 
 		characters = append(characters, char)
 	}
 
-	// バルクインサート（一括保存）
 	if err := r.db.Create(&characters).Error; err != nil {
 		return nil, err
 	}
@@ -123,204 +125,164 @@ func (r *BattleRepository) RegisterCharacters(roomID uint32, is1P bool, charIDs 
 	return characters, nil
 }
 
-func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUniqueID, toX, toY uint32, cost uint32) (*model.GameData, error) {
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUniqueID, toX, toY uint32) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
 			return err
 		}
 
-		if gameData.IsFinished {
+		if gameData.IsFinished || gameData.IsTurnEnded { return nil }
+
+		expectedPlayerID := gameData.Player2ID
+		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
+		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
+
+		var character model.UniqueCharacter
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", characterUniqueID, roomID).First(&character).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
+			return err
+		}
+
+		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
+
+		if err := tx.Model(&model.UniqueCharacter{}).Where("id = ?", character.ID).Updates(map[string]any{
+			"position_x": toX,
+			"position_y": toY,
+		}).Error; err != nil {
+			return err
+		}
+
+		var lastSequence uint
+		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		actionLog := model.GameActionLog{
+			RoomID:                 uint(roomID),
+			Sequence:               lastSequence + 1,
+			PlayerID:               playerID,
+			ActionType:             "MOVE",
+			ActorCharacterUniqueID: uint(characterUniqueID),
+			ToX:                    uint(toX),
+			ToY:                    uint(toY),
+		}
+		return tx.Create(&actionLog).Error
+	})
+}
+
+func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, attackInfos []model.AttackInfoData) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
+			return err
+		}
+
+		if gameData.IsFinished || gameData.IsTurnEnded { return nil }
+		if attackType < model.AttackType0 || attackType > model.AttackType3 { return domain.ErrForbiddenAction }
+
+		expectedPlayerID := gameData.Player2ID
+		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
+		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
+
+		var character model.UniqueCharacter
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", attackerCharacterUniqueID, roomID).First(&character).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
+			return err
+		}
+
+		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
+
+		var targetIDs []string
+		for _, info := range attackInfos {
+			// 💡 コメント仕様：IDが98または99なら拠点のHP(BaseHP)を直接削る力技マッピング
+			if info.AttackedCharacterID == 98 {
+				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp1", info.NewHP).Error; err != nil {
+					return err
+				}
+			} else if info.AttackedCharacterID == 99 {
+				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp2", info.NewHP).Error; err != nil {
+					return err
+				}
+			} else {
+				// 通常のキャラクターへのダメージ適用
+				if err := tx.Model(&model.UniqueCharacter{}).Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).Update("hp", info.NewHP).Error; err != nil {
+					return err
+				}
+			}
+			targetIDs = append(targetIDs, fmt.Sprintf("%d", info.AttackedCharacterID))
+		}
+
+		var lastSequence uint
+		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		actionLog := model.GameActionLog{
+			RoomID:                 uint(roomID),
+			Sequence:               lastSequence + 1,
+			PlayerID:               playerID,
+			ActionType:             "ATTACK",
+			ActorCharacterUniqueID: uint(attackerCharacterUniqueID),
+			AttackType:             int(attackType),
+			TargetCharacterIDs:     strings.Join(targetIDs, ","),
+		}
+		return tx.Create(&actionLog).Error
+	})
+}
+
+// EndTurn: 💡 ターン終了フラグを立てるだけに変更（ステートマシンの要件反映）
+func (r *BattleRepository) EndTurn(roomID uint32) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
+			return err
+		}
+
+		if gameData.IsFinished || gameData.IsTurnEnded {
 			return nil
 		}
 
-		is1PTurn := gameData.Is1PTurn
+		// DBのIsTurnEndedをtrueにする
+		if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("is_turn_ended", true).Error; err != nil {
+			return err
+		}
+
+		// ログに通し番号を進めて記録
+		var lastSequence uint
+		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
 		expectedPlayerID := gameData.Player2ID
-		if is1PTurn {
-			expectedPlayerID = gameData.Player1ID
-		}
+		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
 
-		if playerID != expectedPlayerID {
-			return domain.ErrInvalidTurn
+		actionLog := model.GameActionLog{
+			RoomID:     uint(roomID),
+			Sequence:   lastSequence + 1,
+			PlayerID:   expectedPlayerID,
+			ActionType: "END_TURN",
 		}
-
-		var character model.UniqueCharacter
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("id = ? AND room_id = ?", characterUniqueID, roomID).
-			First(&character).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrCharacterNotFound
-			}
-			return err
-		}
-
-		if character.HP == 0 {
-			return domain.ErrForbiddenAction
-		}
-		if character.Is1P != is1PTurn {
-			return domain.ErrForbiddenAction
-		}
-
-		if err := tx.Model(&model.UniqueCharacter{}).
-			Where("id = ?", character.ID).
-			Updates(map[string]any{
-				"position_x": toX,
-				"position_y": toY,
-			}).Error; err != nil {
-			return err
-		}
-
-		costKey := "Cost2P"
-		if gameData.Player1ID == playerID {
-			costKey = "Cost1P"
-		}
-		fmt.Printf("[ApplyMove] RoomID: %d, PlayerID: %s, Cost: %d (via %s)\n", roomID, playerID, cost, costKey)
-		return tx.Model(&model.GameData{}).
-			Where("id = ?", gameData.ID).
-			Updates(map[string]any{costKey: cost}).Error
+		return tx.Create(&actionLog).Error
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return r.GetGameDataByRoomID(roomID)
 }
 
-func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, isStarted bool, baseHP1 uint32, baseHP2 uint32, attackedCharacterUniqueID uint32, newHP uint32, cost uint32) (*model.GameData, *model.AttackInfo, error) {
-	var createdAttackInfo *model.AttackInfo
-
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
-			return err
-		}
-
-		if gameData.IsFinished {
-			return nil
-		}
-
-		if attackType < model.AttackType0 || attackType > model.AttackType3 {
-			return domain.ErrForbiddenAction
-		}
-
-		is1PTurn := gameData.Is1PTurn
-		expectedPlayerID := gameData.Player2ID
-		attackerSide := model.AttackBy2P
-		if is1PTurn {
-			expectedPlayerID = gameData.Player1ID
-			attackerSide = model.AttackBy1P
-		}
-
-		if playerID != expectedPlayerID {
-			return domain.ErrInvalidTurn
-		}
-
-		var character model.UniqueCharacter
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("id = ? AND room_id = ?", attackerCharacterUniqueID, roomID).
-			First(&character).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrCharacterNotFound
-			}
-			return err
-		}
-
-		if character.HP == 0 {
-			return domain.ErrForbiddenAction
-		}
-		if character.Is1P != is1PTurn {
-			return domain.ErrForbiddenAction
-		}
-
-		attackerCharacterID := character.ID
-		attackInfo := model.AttackInfo{
-			RoomID:              uint(roomID),
-			AttackerSide:        attackerSide,
-			IsStarted:           isStarted,
-			AttackerCharacterID: &attackerCharacterID,
-			AttackType:          attackType,
-		}
-
-		if err := tx.Create(&attackInfo).Error; err != nil {
-			return err
-		}
-		createdAttackInfo = &attackInfo
-
-		if err := tx.Model(&model.UniqueCharacter{}).
-			Where("id = ?", character.ID).
-			Update("is_selected", true).Error; err != nil {
-			return err
-		}
-
-		costKey := "Cost2P"
-		if gameData.Player1ID == playerID {
-			costKey = "Cost1P"
-		}
-
-		fmt.Printf("[ApplyAttack] RoomID: %d, PlayerID: %s, Cost: %d (via %s), HP1: %d, HP2: %d\n", 
-			roomID, playerID, cost, costKey, baseHP1, baseHP2)
-		if err := tx.Model(&model.GameData{}).
-			Where("id = ?", gameData.ID).
-			Updates(map[string]any{
-				"BaseHP1": baseHP1,
-				"BaseHP2": baseHP2,
-				costKey:   cost,
-			}).Error; err != nil {
-			return err
-		}
-
-		if attackedCharacterUniqueID != 0 {
-			if err := tx.Model(&model.UniqueCharacter{}).
-				Where("id = ? AND room_id = ?", attackedCharacterUniqueID, roomID).
-				Update("hp", newHP).Error; err != nil {
-				return err
-			}
-		}
-
-		// 攻撃後にゲーム終了判定を行う
-		if isGameFinished(uint(baseHP1), uint(baseHP2)) {
-			if err := r.finishGameAndUpdateRatings(tx, &gameData, time.Now()); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	gameData, err := r.GetGameDataByRoomID(roomID)
-	return gameData, createdAttackInfo, err
-}
-
-func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
+// NewTurn: 💡 フロントの効果処理が全て終わった後、実際にターンを+1して次に進める
+func (r *BattleRepository) NewTurn(roomID uint32, playerID string) error {
 	now := time.Now()
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
 			return err
 		}
 
-		if gameData.IsFinished {
-			return nil
-		}
+		if gameData.IsFinished { return nil }
 
+		// 試合中の拠点HPチェックを行い、終了条件を満たしていればここでリザルト処理へ
 		if isGameFinished(gameData.BaseHP1, gameData.BaseHP2) {
 			return r.finishGameAndUpdateRatings(tx, &gameData, now)
 		}
@@ -330,43 +292,112 @@ func (r *BattleRepository) EndTurn(roomID uint32) (*model.GameData, error) {
 			return err
 		}
 
+		// 次の手番プレイヤーを判定
 		nextIs1P := determineNextActor(&gameData, characters)
-		return tx.Model(&model.GameData{}).
-			Where("id = ?", gameData.ID).
-			Updates(map[string]any{
-				"turn":          gameData.Turn + 1,
-				"is_1p_turn":    nextIs1P,
-				"turn_start_at": now,
-				"cost1_p":       50,
-				"cost2_p":       50,
-			}).Error
-	})
-	if err != nil {
-		return nil, err
-	}
 
-	return r.GetGameDataByRoomID(roomID)
+		// ターン数を +1、フラグをリセットし、コストを最大値(50)に回復させて更新
+		if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Updates(map[string]any{
+			"turn":          gameData.Turn + 1,
+			"is_1p_turn":    nextIs1P,
+			"turn_start_at": now,
+			"is_turn_ended": false, // 💡 フラグを元に戻す
+			"cost1_p":       50,
+			"cost2_p":       50,
+		}).Error; err != nil {
+			return err
+		}
+
+		var lastSequence uint
+		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		actionLog := model.GameActionLog{
+			RoomID:     uint(roomID),
+			Sequence:   lastSequence + 1,
+			PlayerID:   playerID,
+			ActionType: "NEW_TURN",
+		}
+		return tx.Create(&actionLog).Error
+	})
+}
+
+func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids []model.Grid) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
+			return err
+		}
+
+		if gameData.IsFinished || gameData.IsTurnEnded { return nil }
+
+		expectedPlayerID := gameData.Player2ID
+		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
+		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
+
+		for _, g := range grids {
+			if err := tx.Model(&model.Grid{}).
+				Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
+				Updates(map[string]any{
+					"grid_type":       g.GridType,
+					"is_selected":     g.IsSelected,
+					"is_attack_range": g.IsAttackRange,
+				}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (r *BattleRepository) ApplyEffect(roomID uint32, playerID string, characterUniqueID uint32, effectType int32, newHP uint32) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
+			return err
+		}
+
+		if gameData.IsFinished { return nil }
+
+		var character model.UniqueCharacter
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", characterUniqueID, roomID).First(&character).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
+			return err
+		}
+
+		if err := tx.Model(&model.UniqueCharacter{}).Where("id = ?", character.ID).Update("hp", newHP).Error; err != nil {
+			return err
+		}
+
+		var lastSequence uint
+		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		actionLog := model.GameActionLog{
+			RoomID:                 uint(roomID),
+			Sequence:               lastSequence + 1,
+			PlayerID:               playerID,
+			ActionType:             "EFFECT",
+			ActorCharacterUniqueID: uint(characterUniqueID),
+			EffectType:             int(effectType),
+		}
+		return tx.Create(&actionLog).Error
+	})
 }
 
 func (r *BattleRepository) finalizeGameIfNeeded(roomID uint32) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
 			return err
 		}
 
-		if gameData.IsFinished {
-			return nil
-		}
-
-		if !isGameFinished(gameData.BaseHP1, gameData.BaseHP2) {
-			return nil
-		}
+		if gameData.IsFinished { return nil }
+		if !isGameFinished(gameData.BaseHP1, gameData.BaseHP2) { return nil }
 
 		return r.finishGameAndUpdateRatings(tx, &gameData, time.Now())
 	})
@@ -376,16 +407,12 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 	score1, score2, winnerID := battleResult(gameData)
 
 	var player1 model.User
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("id = ?", gameData.Player1ID).
-		First(&player1).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", gameData.Player1ID).First(&player1).Error; err != nil {
 		return err
 	}
 
 	var player2 model.User
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		Where("id = ?", gameData.Player2ID).
-		First(&player2).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", gameData.Player2ID).First(&player2).Error; err != nil {
 		return err
 	}
 
@@ -402,22 +429,21 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		player2.NumWins++
 	}
 
-	// レート変動値と更新後のレートを GameData に記録
 	gameData.Player1RateDelta = newRate1 - oldRate1
 	gameData.Player2RateDelta = newRate2 - oldRate2
 	gameData.Player1Rate = newRate1
 	gameData.Player2Rate = newRate2
 
-	if err := tx.Save(&player1).Error; err != nil {
-		return err
-	}
-	if err := tx.Save(&player2).Error; err != nil {
-		return err
-	}
+	if err := tx.Save(&player1).Error; err != nil { return err }
+	if err := tx.Save(&player2).Error; err != nil { return err }
 
 	updates := map[string]any{
-		"is_finished": true,
-		"finished_at": finishedAt,
+		"is_finished":        true,
+		"finished_at":         finishedAt,
+		"player1_rate_delta": gameData.Player1RateDelta,
+		"player2_rate_delta": gameData.Player2RateDelta,
+		"player1_rate":       gameData.Player1Rate,
+		"player2_rate":       gameData.Player2Rate,
 	}
 	if winnerID != nil {
 		updates["winner_player_id"] = *winnerID
@@ -425,34 +451,18 @@ func (r *BattleRepository) finishGameAndUpdateRatings(tx *gorm.DB, gameData *mod
 		updates["winner_player_id"] = nil
 	}
 
-	updates["player1_rate_delta"] = gameData.Player1RateDelta
-	updates["player2_rate_delta"] = gameData.Player2RateDelta
-	updates["player1_rate"] = gameData.Player1Rate
-	updates["player2_rate"] = gameData.Player2Rate
-
-	fmt.Printf("[finishGameAndUpdateRatings] RoomID: %d, P1Rate: %d (delta: %d), P2Rate: %d (delta: %d)\n",
-		gameData.RoomID, gameData.Player1Rate, gameData.Player1RateDelta, gameData.Player2Rate, gameData.Player2RateDelta)
-
-	if err := tx.Model(&model.GameData{}).
-		Where("id = ?", gameData.ID).
-		Updates(updates).Error; err != nil {
+	if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Updates(updates).Error; err != nil {
 		return err
 	}
 
-	return tx.Model(&model.RoomMatch{}).
-		Where("id = ?", gameData.RoomID).
-		Update("is_gaming", false).Error
+	return tx.Model(&model.RoomMatch{}).Where("id = ?", gameData.RoomID).Update("is_gaming", false).Error
 }
 
 func (r *BattleRepository) recalculateTurnStarter(roomID uint32) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
 			return err
 		}
 
@@ -462,57 +472,27 @@ func (r *BattleRepository) recalculateTurnStarter(roomID uint32) error {
 		}
 
 		nextIs1P := determineNextActor(&gameData, characters)
-		return tx.Model(&model.GameData{}).
-			Where("id = ?", gameData.ID).
-			Update("is_1p_turn", nextIs1P).Error
+		return tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("is_1p_turn", nextIs1P).Error
 	})
 }
 
 func determineNextActor(gameData *model.GameData, characters []model.UniqueCharacter) bool {
-	// ユーザー要望：偶数回のターン（１サイクル）が終了したとき、次とその次のプレイヤーをきめる。両方同じはダメ。
-	// ロジック：
-	// 奇数ターン終了時（今がTurn 1, 3...）：必ず相手に回す（これで次とその次が異なることを保証）
-	// 偶数ターン終了時（今がTurn 2, 4...）：コスト計算で次のサイクルのリーダーを決める
-
-	// gameData.Turn は現在のターン数
 	isOddTurn := gameData.Turn%2 != 0
-
 	if isOddTurn {
-		// 奇数ターンの次は強制的に交代
 		return !gameData.Is1PTurn
 	}
 
-	// 偶数ターン終了時：コスト計算
 	p1Min, has1P := minAliveMoveCost(characters, true)
 	p2Min, has2P := minAliveMoveCost(characters, false)
 
-	if has1P && !has2P {
-		return true
-	}
-	if !has1P && has2P {
-		return false
-	}
-	if !has1P && !has2P {
-		return !gameData.Is1PTurn
-	}
+	if has1P && !has2P { return true }
+	if !has1P && has2P { return false }
+	if !has1P && !has2P { return !gameData.Is1PTurn }
 
-	if p1Min < p2Min {
-		return true
-	}
-	if p2Min < p1Min {
-		return false
-	}
+	if p1Min < p2Min { return true }
+	if p2Min < p1Min { return false }
 
-	// コスト同値なら強制交代
 	return !gameData.Is1PTurn
-}
-
-func randomFirstPlayer(fallback bool) bool {
-	var b [1]byte
-	if _, err := crand.Read(b[:]); err != nil {
-		return fallback
-	}
-	return b[0]%2 == 0
 }
 
 func isGameFinished(baseHP1, baseHP2 uint) bool {
@@ -520,9 +500,7 @@ func isGameFinished(baseHP1, baseHP2 uint) bool {
 }
 
 func battleResult(gameData *model.GameData) (score1 float64, score2 float64, winnerID *string) {
-	if gameData.BaseHP1 == 0 && gameData.BaseHP2 == 0 {
-		return 0.5, 0.5, nil
-	}
+	if gameData.BaseHP1 == 0 && gameData.BaseHP2 == 0 { return 0.5, 0.5, nil }
 	if gameData.BaseHP2 == 0 {
 		winner := gameData.Player1ID
 		return 1.0, 0.0, &winner
@@ -533,7 +511,6 @@ func battleResult(gameData *model.GameData) (score1 float64, score2 float64, win
 
 func calculateEloRates(rate1, rate2 int, score1, score2 float64) (int, int) {
 	const k = 32.0
-
 	r1 := float64(normalizeRate(rate1))
 	r2 := float64(normalizeRate(rate2))
 
@@ -546,93 +523,30 @@ func calculateEloRates(rate1, rate2 int, score1, score2 float64) (int, int) {
 }
 
 func normalizeRate(rate int) int {
-	if rate <= 0 {
-		return 1500
-	}
+	if rate <= 0 { return 1500 }
 	return rate
 }
 
 func minAliveMoveCost(characters []model.UniqueCharacter, is1P bool) (int, bool) {
 	minCost := 0
 	found := false
-
 	for _, character := range characters {
-		if character.Is1P != is1P {
-			continue
-		}
-		if character.HP == 0 {
-			continue
-		}
-
+		if character.Is1P != is1P || character.HP == 0 { continue }
 		cost, ok := model.DefaultCharacterMoveCosts[character.CharacterID]
-		if !ok {
-			cost = 10
-		}
-
+		if !ok { cost = 10 }
 		if !found || cost < minCost {
 			minCost = cost
 			found = true
 		}
 	}
-
 	return minCost, found
 }
 
-func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids []model.Grid, cost uint32) (*model.GameData, error) {
-	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("room_id = ?", roomID).
-			First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrGameNotFound
-			}
-			return err
-		}
-
-		if gameData.IsFinished {
-			return nil
-		}
-
-		costKey := "Cost2P"
-		if gameData.Player1ID == playerID {
-			costKey = "Cost1P"
-		}
-		fmt.Printf("[ApplyGridUpdate] RoomID: %d, PlayerID: %s, Cost: %d (via %s)\n", roomID, playerID, cost, costKey)
-		if err := tx.Model(&model.GameData{}).
-			Where("id = ?", gameData.ID).
-			Updates(map[string]any{costKey: cost}).Error; err != nil {
-			return err
-		}
-
-		// ターンチェック (オプションだが他のApply系と同様に実装)
-		is1PTurn := gameData.Is1PTurn
-		expectedPlayerID := gameData.Player2ID
-		if is1PTurn {
-			expectedPlayerID = gameData.Player1ID
-		}
-		if playerID != expectedPlayerID {
-			return domain.ErrInvalidTurn
-		}
-
-		// グリッド情報の更新
-		for _, g := range grids {
-			if err := tx.Model(&model.Grid{}).
-				Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
-				Updates(map[string]any{
-					"grid_type":       g.GridType,
-					"is_selected":     g.IsSelected,
-					"is_attack_range": g.IsAttackRange,
-				}).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
+func (r *BattleRepository) FetchActionLog(roomID uint32, sequence uint32) (*model.GameActionLog, error) {
+	var logData model.GameActionLog
+	if err := r.db.Where("room_id = ? AND sequence = ?", roomID, sequence).First(&logData).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) { return nil, domain.ErrGameNotFound }
 		return nil, err
 	}
-
-	return r.GetGameDataByRoomID(roomID)
+	return &logData, nil
 }

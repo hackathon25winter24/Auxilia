@@ -215,3 +215,20 @@ func (h *UserHandler) toPBResponse(u *model.User) *pb.UserResponse {
 		Deck3: int32(u.Deck3),
 	}
 }
+
+// GetUserByName: ユーザー名でユーザーを検索
+func (h *UserHandler) GetUserByName(ctx context.Context, req *pb.NameRequest) (*pb.UserResponse, error) {
+	if req.Name == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	user, err := h.repo.FindByName(ctx, req.Name)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to fetch user: %v", err)
+	}
+
+	return h.toPBResponse(user), nil
+}
