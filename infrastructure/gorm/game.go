@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -35,9 +36,9 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		Cost1P:      model.DefaultCost,
 		Cost2P:      model.DefaultCost,
 		Turn:        1,
-		Is1PTurn:    true,
+		Is1PTurn:    true, 
 		TurnStartAt: now,
-		IsTurnEnded: false, // 💡 初期状態はfalse
+		IsTurnEnded: false, // 初期状態はfalse
 	}
 
 	var grids []model.Grid
@@ -293,16 +294,16 @@ func (r *BattleRepository) NewTurn(roomID uint32, playerID string) error {
 		}
 
 		// 次の手番プレイヤーを判定
-		nextIs1P := determineNextActor(&gameData, characters)
+		nextIs1P := !gameData.Is1PTurn
 
 		// ターン数を +1、フラグをリセットし、コストを最大値(50)に回復させて更新
 		if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Updates(map[string]any{
 			"turn":          gameData.Turn + 1,
 			"is_1p_turn":    nextIs1P,
 			"turn_start_at": now,
-			"is_turn_ended": false, // 💡 フラグを元に戻す
-			"cost1_p":       50,
-			"cost2_p":       50,
+			"is_turn_ended": false, // フラグを元に戻す
+			"cost1_p":       model.DefaultCost,
+			"cost2_p":       model.DefaultCost,
 		}).Error; err != nil {
 			return err
 		}
@@ -471,28 +472,22 @@ func (r *BattleRepository) recalculateTurnStarter(roomID uint32) error {
 			return err
 		}
 
-		nextIs1P := determineNextActor(&gameData, characters)
+		nextIs1P := determineFirstActor(&gameData)
 		return tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("is_1p_turn", nextIs1P).Error
 	})
 }
 
-func determineNextActor(gameData *model.GameData, characters []model.UniqueCharacter) bool {
-	isOddTurn := gameData.Turn%2 != 0
-	if isOddTurn {
-		return !gameData.Is1PTurn
-	}
+func determineFirstActor(gameData *model.GameData) bool {
+	var characters []model.UniqueCharacter
+	characters = gameData.Characters
 
-	p1Min, has1P := minAliveMoveCost(characters, true)
-	p2Min, has2P := minAliveMoveCost(characters, false)
+	p1sum := charactersMoveCost(characters, true)
+	p2sum := charactersMoveCost(characters, false)
 
-	if has1P && !has2P { return true }
-	if !has1P && has2P { return false }
-	if !has1P && !has2P { return !gameData.Is1PTurn }
-
-	if p1Min < p2Min { return true }
-	if p2Min < p1Min { return false }
-
-	return !gameData.Is1PTurn
+	if p1sum < p2sum { return true }
+	if p2sum < p1sum { return false }
+	
+	return rand.Float64() < 0.5
 }
 
 func isGameFinished(baseHP1, baseHP2 uint) bool {
@@ -527,19 +522,14 @@ func normalizeRate(rate int) int {
 	return rate
 }
 
-func minAliveMoveCost(characters []model.UniqueCharacter, is1P bool) (int, bool) {
-	minCost := 0
-	found := false
+func charactersMoveCost(characters []model.UniqueCharacter, is1P bool) (int) {
+	costSum := 0
 	for _, character := range characters {
 		if character.Is1P != is1P || character.HP == 0 { continue }
-		cost, ok := model.DefaultCharacterMoveCosts[character.CharacterID]
-		if !ok { cost = 10 }
-		if !found || cost < minCost {
-			minCost = cost
-			found = true
-		}
+		cost, _ := model.DefaultCharacterMoveCosts[character.CharacterID]
+		costSum += cost
 	}
-	return minCost, found
+	return costSum
 }
 
 func (r *BattleRepository) FetchActionLog(roomID uint32, sequence uint32) (*model.GameActionLog, error) {
