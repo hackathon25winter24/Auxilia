@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,16 +31,16 @@ type BattleHandler struct {
 func NewBattleHandler(repo repository.BattleRepository) *BattleHandler {
 	h := &BattleHandler{repo: repo}
 
-	// 💡 補助関数（最新データを取得してpbレスポンスにする共通ロジック）
 	getLatestResp := func(roomID uint32) *pb.GameDataResponse {
-		gameData, _ := repo.GetGameDataByRoomID(roomID)
+		ctx := context.Background()
+		
+		gameData, _ := repo.GetGameDataByRoomID(ctx, roomID)
 		if gameData != nil {
 			return convertToResponse(gameData)
 		}
 		return nil
 	}
 
-	// 💡 タイマー制限時間を60秒としてマネージャーを初期化
 	h.timerMgr = NewTurnTimerManager(repo, h.broadcastToGame, getLatestResp, 60*time.Second)
 
 	return h
@@ -57,7 +58,7 @@ func (h *BattleHandler) CreateGame(ctx context.Context, req *pb.CreateGameReques
 
 // GetGameData: 試合情報の取得
 func (h *BattleHandler) GetGameData(ctx context.Context, req *pb.GetGameDataRequest) (*pb.GameDataResponse, error) {
-	gameData, err := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, err := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		P2RateDelta: int32(m.Player2RateDelta),
 		P1Rate:      int32(m.Player1Rate),
 		P2Rate:      int32(m.Player2Rate),
-		IsTurnEnded: m.IsTurnEnded, // 💡 最新の .proto フィールドに対応
+		IsTurnEnded: m.IsTurnEnded,
 	}
 
 	if m.WinnerPlayerID != nil {
@@ -94,6 +95,7 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		res.FinishedAt = timestamppb.New(*m.FinishedAt)
 	}
 
+	// キャラクター情報の詰め替え
 	for _, c := range m.Characters {
 		char := &pb.UniqueCharacter{
 			Id:          uint32(c.ID),
@@ -104,6 +106,7 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 			PositionY:   uint32(c.PositionY),
 			IsSelected:  c.IsSelected,
 		}
+
 		for _, cond := range c.Conditions {
 			char.Conditions = append(char.Conditions, &pb.CharacterCondition{
 				Id:          uint32(cond.ID),
@@ -114,51 +117,22 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 		res.Characters = append(res.Characters, char)
 	}
 
+	// 💡 グリッド情報の詰め替え（キャラクターの滞在判定は含めず、純粋な地形・デバフ情報のみ）
 	for _, grid := range m.Grids {
 		res.Grids = append(res.Grids, &pb.GridInfo{
-			PositionX:     uint32(grid.PositionX),
-			PositionY:     uint32(grid.PositionY),
-			GridType:      grid.GridType,
-			IsSelected:    grid.IsSelected,
-			IsAttackRange: grid.IsAttackRange,
+			PositionX:  uint32(grid.PositionX),
+			PositionY:  uint32(grid.PositionY),
+			GridType:   grid.GridType,   // 変更のあった地形型
+			DebuffType: grid.DebuffType, // 配置されたトラップやデバフ型
+			// ※ IsCharacterStay は proto 定義から除外、またはフロント側で無視されるためここでの処理は不要です
 		})
-	}
-
-	// 💡 最新アクションにおける各キャラの被弾ダメージ情報を詰める（履歴演出用）
-	// 必要に応じてリポジトリやモデル側からデータを引っ張る形に調整してください
-	// 現状はプレースホルダーとして初期化のみ行っています
-	res.AttackInfos = make([]*pb.AttackInfo, 0)
-
-	// GameActionLog を変換して返す
-	if m.CurrentAction.ID != 0 {
-		var targetIDs []uint32
-		if m.CurrentAction.TargetCharacterIDs != "" {
-			parts := strings.Split(m.CurrentAction.TargetCharacterIDs, ",")
-			for _, p := range parts {
-				if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil {
-					targetIDs = append(targetIDs, uint32(id))
-				}
-			}
-		}
-		res.GameActionLog = &pb.GameActionLog{
-			Id:                       uint32(m.CurrentAction.ID),
-			RoomId:                   uint32(m.CurrentAction.RoomID),
-			Sequence:                 uint32(m.CurrentAction.Sequence),
-			PlayerId:                 m.CurrentAction.PlayerID,
-			ActionType:               m.CurrentAction.ActionType,
-			ActorCharacterUniqueId:   uint32(m.CurrentAction.ActorCharacterUniqueID),
-			ToX:                      uint32(m.CurrentAction.ToX),
-			ToY:                      uint32(m.CurrentAction.ToY),
-			AttackType:               int32(m.CurrentAction.AttackType),
-			TargetCharacterUniqueIds: targetIDs,
-		}
 	}
 
 	return res
 }
 
 func (h *BattleHandler) RegisterCharacters(ctx context.Context, req *pb.RegisterCharactersRequest) (*pb.RegisterCharactersResponse, error) {
-	chars, err := h.repo.RegisterCharacters(req.RoomId, req.Is_1P, req.CharacterIds)
+	chars, err := h.repo.RegisterCharacters(ctx,req.RoomId, req.Is_1P, req.CharacterIds)
 	if err != nil {
 		return nil, err
 	}
@@ -200,13 +174,17 @@ func (h *BattleHandler) StreamGame(req *pb.StreamGameRequest, stream pb.BattleSe
 		roomStreamsMu.Unlock()
 	}()
 
+	// stream.Context() から context を取得してリポジトリに渡す
+	ctx := stream.Context()
+
 	// 初回接続時の情報送信
-	gameData, err := h.repo.GetGameDataByRoomID(roomID)
+	gameData, err := h.repo.GetGameDataByRoomID(ctx, roomID)
 	if err == nil {
 		stream.Send(convertToResponse(gameData))
 	}
 
-	<-stream.Context().Done()
+	// 💡 stream.Context().Done() がチャネルを閉じるのを待つ
+	<-ctx.Done()
 	return nil
 }
 
@@ -227,12 +205,12 @@ func (h *BattleHandler) ApplyMove(ctx context.Context, req *pb.MoveAction) (*pb.
 		return nil, status.Error(codes.InvalidArgument, "character_id is required")
 	}
 
-	err := h.repo.ApplyMove(req.RoomId, req.PlayerId, req.CharacterId, req.ToX, req.ToY)
+	err := h.repo.ApplyMove(ctx, req.RoomId, req.PlayerId, req.CharacterId, req.ToX, req.ToY)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to apply move: %v", err)
 	}
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, _ := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)
@@ -255,12 +233,12 @@ func (h *BattleHandler) ApplyAttack(ctx context.Context, req *pb.AttackAction) (
 		})
 	}
 
-	err := h.repo.ApplyAttack(req.RoomId, req.PlayerId, req.AttackerCharacterId, req.AttackType, attackInfos)
+	err := h.repo.ApplyAttack(ctx, req.RoomId, req.PlayerId, req.AttackerCharacterId, req.AttackType, attackInfos)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to apply attack: %v", err)
 	}
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, _ := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)
@@ -270,7 +248,7 @@ func (h *BattleHandler) ApplyAttack(ctx context.Context, req *pb.AttackAction) (
 }
 
 func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.EndTurnRequest) (*pb.AcceptResponse, error) {
-	err := h.repo.EndTurn(req.RoomId)
+	err := h.repo.EndTurn(ctx, req.RoomId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to end turn: %v", err)
 	}
@@ -278,7 +256,7 @@ func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.EndTurnRequest) (*p
 	// 手動で終了されたので、走っているタイマーを安全にストップ
 	h.timerMgr.StopTimer(req.RoomId)
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, _ := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)
@@ -288,68 +266,110 @@ func (h *BattleHandler) EndTurn(ctx context.Context, req *pb.EndTurnRequest) (*p
 }
 
 func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.GridUpdateAction) (*pb.AcceptResponse, error) {
+	// 1. バリデーション: 変更データが空の場合は何もしない
+	if len(req.Grids) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "grids list cannot be empty")
+	}
+
+	// 2. proto のスライスをモデル（GORM）のスライスに変換
 	var modelGrids []model.Grid
 	for _, g := range req.Grids {
 		modelGrids = append(modelGrids, model.Grid{
-			PositionX:     uint(g.PositionX),
-			PositionY:     uint(g.PositionY),
-			GridType:      g.GridType,
-			IsSelected:    g.IsSelected,
-			IsAttackRange: g.IsAttackRange,
+			RoomID:     req.RoomId,         // GORMの複合キー用に room_id を各マスにセット
+			PositionX:  uint32(g.PositionX), // 必要に応じて uint にキャストしてください
+			PositionY:  uint32(g.PositionY),
+			GridType:   g.GridType,
+			DebuffType: g.DebuffType,
 		})
 	}
 
-	err := h.repo.ApplyGridUpdate(req.RoomId, req.PlayerId, modelGrids)
+	// 3. 💡 リポジトリの一括更新処理を呼び出す
+	// 引数にスライス（modelGrids）を渡せるようにします
+	err := h.repo.ApplyGridUpdate(ctx, req.RoomId, modelGrids)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to apply grid update: %v", err)
 	}
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
-	if gameData != nil {
+	// 4. 最新のゲームデータを取得して、ストリーム中の全プレイヤーにブロードキャスト
+	gameData, err := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
+	if err == nil && gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)
 	}
 
-	return &pb.AcceptResponse{Success: true, Message: "grid updated successfully"}, nil
-} // 💡 閉じ括弧を修正
+	return &pb.AcceptResponse{
+		Success: true, 
+		Message: fmt.Sprintf("%d grids updated successfully", len(modelGrids)),
+	}, nil
+}
 
 func (h *BattleHandler) FetchActionLog(ctx context.Context, req *pb.FetchActionLogRequest) (*pb.GameActionLog, error) {
-	logData, err := h.repo.FetchActionLog(req.RoomId, req.Sequence) // 💡 組み込み変数「log」との衝突を回避するため変数名を logData に変更
+	logData, err := h.repo.FetchActionLog(ctx, req.RoomId, req.Sequence)
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "action log not found: %v", err)
 	}
 
-	var targetIDs []uint32
-	if logData.TargetCharacterIDs != "" {
-		parts := strings.Split(logData.TargetCharacterIDs, ",")
-		for _, p := range parts {
-			if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil {
-				targetIDs = append(targetIDs, uint32(id))
-			}
-		}
+	// 1. 共通部分のベースを組み立てる
+	logResp := &pb.GameActionLog{
+		Id:                     uint32(logData.ID),
+		RoomId:                 uint32(logData.RoomID),
+		Sequence:               uint32(logData.Sequence),
+		PlayerId:               logData.PlayerID,
+		ActorCharacterUniqueId: uint32(logData.ActorCharacterUniqueID),
 	}
 
-	return &pb.GameActionLog{
-		Id:                       uint32(logData.ID),
-		RoomId:                   uint32(logData.RoomID),
-		Sequence:                 uint32(logData.Sequence),
-		PlayerId:                 logData.PlayerID,
-		ActionType:               logData.ActionType,
-		ActorCharacterUniqueId:   uint32(logData.ActorCharacterUniqueID),
-		ToX:                      uint32(logData.ToX),
-		ToY:                      uint32(logData.ToY),
-		AttackType:               int32(logData.AttackType),
-		TargetCharacterUniqueIds: targetIDs,
-	}, nil
+	// 2. 文字列の action_type を proto の Enum 型にマッピング
+	switch logData.ActionType {
+	case "MOVE":
+		logResp.ActionType = pb.ActionType_MOVE
+
+		// 💡 oneof への代入処理 (MoveDetail 構造体を作ってラップして入れる)
+		logResp.Detail = &pb.GameActionLog_MoveDetail{
+			MoveDetail: &pb.MoveDetail{
+				ToX: uint32(logData.ToX), // ⚠️ もしここでエラーが出る場合は「To_X」にしてください
+				ToY: uint32(logData.ToY), // ⚠️ もしここでエラーが出る場合は「To_Y」にしてください
+			},
+		}
+
+	case "ATTACK":
+		logResp.ActionType = pb.ActionType_ATTACK
+
+		// カンマ区切りの文字列を []uint32 に変換
+		var targetIDs []uint32
+		if logData.TargetCharacterIDs != "" {
+			parts := strings.Split(logData.TargetCharacterIDs, ",")
+			for _, p := range parts {
+				trimmed := strings.TrimSpace(p)
+				if trimmed != "" {
+					if id, err := strconv.ParseUint(trimmed, 10, 32); err == nil {
+						targetIDs = append(targetIDs, uint32(id))
+					}
+				}
+			}
+		}
+
+		// 💡 oneof への代入処理 (AttackDetail 構造体を作ってラップして入れる)
+		logResp.Detail = &pb.GameActionLog_AttackDetail{
+			AttackDetail: &pb.AttackDetail{
+				AttackType:               int32(logData.AttackType),
+				TargetCharacterUniqueIds: targetIDs,
+			},
+		}
+
+	default:
+		logResp.ActionType = pb.ActionType_ACTION_TYPE_UNKNOWN
+	}
+
+	return logResp, nil
 }
 
 func (h *BattleHandler) ApplyEffect(ctx context.Context, req *pb.ApplyEffectRequest) (*pb.AcceptResponse, error) {
-	err := h.repo.ApplyEffect(req.RoomId, req.PlayerId, req.CharacterId, req.EffectType, req.NewHp)
+	err := h.repo.ApplyEffect(ctx, req.RoomId, req.PlayerId, req.CharacterId, req.EffectType, req.NewHp)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to apply effect: %v", err)
 	}
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, _ := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)
@@ -359,7 +379,7 @@ func (h *BattleHandler) ApplyEffect(ctx context.Context, req *pb.ApplyEffectRequ
 }
 
 func (h *BattleHandler) NewTurn(ctx context.Context, req *pb.NewTurnRequest) (*pb.AcceptResponse, error) {
-	err := h.repo.NewTurn(req.RoomId, req.PlayerId)
+	err := h.repo.NewTurn(ctx, req.RoomId, req.PlayerId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to start new turn: %v", err)
 	}
@@ -367,7 +387,7 @@ func (h *BattleHandler) NewTurn(ctx context.Context, req *pb.NewTurnRequest) (*p
 	// 💡 新しいターンが開幕した瞬間に、次の30秒タイマーを始動！
 	h.timerMgr.StartTimer(req.RoomId)
 
-	gameData, _ := h.repo.GetGameDataByRoomID(req.RoomId)
+	gameData, _ := h.repo.GetGameDataByRoomID(ctx, req.RoomId)
 	if gameData != nil {
 		resp := convertToResponse(gameData)
 		h.broadcastToGame(req.RoomId, resp)

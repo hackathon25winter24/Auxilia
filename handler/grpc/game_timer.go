@@ -53,7 +53,7 @@ func (m *TurnTimerManager) StartTimer(roomID uint32) {
 			log.Printf("[Timer] Room %d timed out! Executing auto EndTurn.", roomID)
 			
 			// 1. リポジトリのEndTurnを叩いて IsTurnEnded = true に倒す
-			if err := m.repo.EndTurn(roomID); err != nil {
+			if err := m.repo.EndTurn(ctx, roomID); err != nil {
 				log.Printf("[Timer] Error executing auto EndTurn for room %d: %v", roomID, err)
 				return
 			}

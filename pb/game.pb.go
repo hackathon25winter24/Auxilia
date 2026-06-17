@@ -22,6 +22,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ActionType int32
+
+const (
+	ActionType_ACTION_TYPE_UNKNOWN ActionType = 0
+	ActionType_MOVE                ActionType = 1
+	ActionType_ATTACK              ActionType = 2
+)
+
+// Enum value maps for ActionType.
+var (
+	ActionType_name = map[int32]string{
+		0: "ACTION_TYPE_UNKNOWN",
+		1: "MOVE",
+		2: "ATTACK",
+	}
+	ActionType_value = map[string]int32{
+		"ACTION_TYPE_UNKNOWN": 0,
+		"MOVE":                1,
+		"ATTACK":              2,
+	}
+)
+
+func (x ActionType) Enum() *ActionType {
+	p := new(ActionType)
+	*p = x
+	return p
+}
+
+func (x ActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_game_proto_enumTypes[0].Descriptor()
+}
+
+func (ActionType) Type() protoreflect.EnumType {
+	return &file_game_proto_enumTypes[0]
+}
+
+func (x ActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActionType.Descriptor instead.
+func (ActionType) EnumDescriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{0}
+}
+
 // 試合登録用リクエスト
 type CreateGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -138,8 +187,8 @@ func (x *StreamGameRequest) GetPlayerId() string {
 type GridUpdateAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoomId        uint32                 `protobuf:"varint,1,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	PlayerId      string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
-	Grids         []*GridInfo            `protobuf:"bytes,3,rep,name=grids,proto3" json:"grids,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,3,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	Grids         []*GridInfo            `protobuf:"bytes,2,rep,name=grids,proto3" json:"grids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -624,9 +673,8 @@ type GridInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PositionX     uint32                 `protobuf:"varint,1,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
 	PositionY     uint32                 `protobuf:"varint,2,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
-	GridType      int32                  `protobuf:"varint,3,opt,name=grid_type,json=gridType,proto3" json:"grid_type,omitempty"`
-	IsSelected    bool                   `protobuf:"varint,4,opt,name=is_selected,json=isSelected,proto3" json:"is_selected,omitempty"`
-	IsAttackRange bool                   `protobuf:"varint,5,opt,name=is_attack_range,json=isAttackRange,proto3" json:"is_attack_range,omitempty"`
+	DebuffType    int32                  `protobuf:"varint,3,opt,name=debuff_type,json=debuffType,proto3" json:"debuff_type,omitempty"`
+	GridType      int32                  `protobuf:"varint,4,opt,name=grid_type,json=gridType,proto3" json:"grid_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -675,25 +723,18 @@ func (x *GridInfo) GetPositionY() uint32 {
 	return 0
 }
 
+func (x *GridInfo) GetDebuffType() int32 {
+	if x != nil {
+		return x.DebuffType
+	}
+	return 0
+}
+
 func (x *GridInfo) GetGridType() int32 {
 	if x != nil {
 		return x.GridType
 	}
 	return 0
-}
-
-func (x *GridInfo) GetIsSelected() bool {
-	if x != nil {
-		return x.IsSelected
-	}
-	return false
-}
-
-func (x *GridInfo) GetIsAttackRange() bool {
-	if x != nil {
-		return x.IsAttackRange
-	}
-	return false
 }
 
 type UniqueCharacter struct {
@@ -1060,18 +1101,19 @@ type GameActionLog struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Id                     uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	RoomId                 uint32                 `protobuf:"varint,2,opt,name=room_id,json=roomId,proto3" json:"room_id,omitempty"`
-	Sequence               uint32                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`                                                               // 通し番号（1, 2, 3...）
-	PlayerId               string                 `protobuf:"bytes,4,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`                                                // 行動したプレイヤーID
-	ActionType             string                 `protobuf:"bytes,5,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty"`                                          // "MOVE" または "ATTACK"
-	ActorCharacterUniqueId uint32                 `protobuf:"varint,6,opt,name=actor_character_unique_id,json=actorCharacterUniqueId,proto3" json:"actor_character_unique_id,omitempty"` // 行動したキャラのID
-	// （action_type == "MOVE" の時のみ使用）
-	ToX uint32 `protobuf:"varint,7,opt,name=to_x,json=toX,proto3" json:"to_x,omitempty"`
-	ToY uint32 `protobuf:"varint,8,opt,name=to_y,json=toY,proto3" json:"to_y,omitempty"`
-	// （action_type == "ATTACK" の時のみ使用）
-	AttackType               int32    `protobuf:"varint,9,opt,name=attack_type,json=attackType,proto3" json:"attack_type,omitempty"`
-	TargetCharacterUniqueIds []uint32 `protobuf:"varint,10,rep,packed,name=target_character_unique_ids,json=targetCharacterUniqueIds,proto3" json:"target_character_unique_ids,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	Sequence               uint32                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	PlayerId               string                 `protobuf:"bytes,4,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	ActionType             ActionType             `protobuf:"varint,5,opt,name=action_type,json=actionType,proto3,enum=game.network.ActionType" json:"action_type,omitempty"`
+	ActorCharacterUniqueId uint32                 `protobuf:"varint,6,opt,name=actor_character_unique_id,json=actorCharacterUniqueId,proto3" json:"actor_character_unique_id,omitempty"`
+	// 行動タイプによって中身が切り替わることを明示
+	//
+	// Types that are valid to be assigned to Detail:
+	//
+	//	*GameActionLog_MoveDetail
+	//	*GameActionLog_AttackDetail
+	Detail        isGameActionLog_Detail `protobuf_oneof:"detail"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GameActionLog) Reset() {
@@ -1132,11 +1174,11 @@ func (x *GameActionLog) GetPlayerId() string {
 	return ""
 }
 
-func (x *GameActionLog) GetActionType() string {
+func (x *GameActionLog) GetActionType() ActionType {
 	if x != nil {
 		return x.ActionType
 	}
-	return ""
+	return ActionType_ACTION_TYPE_UNKNOWN
 }
 
 func (x *GameActionLog) GetActorCharacterUniqueId() uint32 {
@@ -1146,28 +1188,145 @@ func (x *GameActionLog) GetActorCharacterUniqueId() uint32 {
 	return 0
 }
 
-func (x *GameActionLog) GetToX() uint32 {
+func (x *GameActionLog) GetDetail() isGameActionLog_Detail {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+func (x *GameActionLog) GetMoveDetail() *MoveDetail {
+	if x != nil {
+		if x, ok := x.Detail.(*GameActionLog_MoveDetail); ok {
+			return x.MoveDetail
+		}
+	}
+	return nil
+}
+
+func (x *GameActionLog) GetAttackDetail() *AttackDetail {
+	if x != nil {
+		if x, ok := x.Detail.(*GameActionLog_AttackDetail); ok {
+			return x.AttackDetail
+		}
+	}
+	return nil
+}
+
+type isGameActionLog_Detail interface {
+	isGameActionLog_Detail()
+}
+
+type GameActionLog_MoveDetail struct {
+	MoveDetail *MoveDetail `protobuf:"bytes,7,opt,name=move_detail,json=moveDetail,proto3,oneof"`
+}
+
+type GameActionLog_AttackDetail struct {
+	AttackDetail *AttackDetail `protobuf:"bytes,8,opt,name=attack_detail,json=attackDetail,proto3,oneof"`
+}
+
+func (*GameActionLog_MoveDetail) isGameActionLog_Detail() {}
+
+func (*GameActionLog_AttackDetail) isGameActionLog_Detail() {}
+
+type MoveDetail struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToX           uint32                 `protobuf:"varint,1,opt,name=to_x,json=toX,proto3" json:"to_x,omitempty"`
+	ToY           uint32                 `protobuf:"varint,2,opt,name=to_y,json=toY,proto3" json:"to_y,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoveDetail) Reset() {
+	*x = MoveDetail{}
+	mi := &file_game_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoveDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoveDetail) ProtoMessage() {}
+
+func (x *MoveDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoveDetail.ProtoReflect.Descriptor instead.
+func (*MoveDetail) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *MoveDetail) GetToX() uint32 {
 	if x != nil {
 		return x.ToX
 	}
 	return 0
 }
 
-func (x *GameActionLog) GetToY() uint32 {
+func (x *MoveDetail) GetToY() uint32 {
 	if x != nil {
 		return x.ToY
 	}
 	return 0
 }
 
-func (x *GameActionLog) GetAttackType() int32 {
+type AttackDetail struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	AttackType               int32                  `protobuf:"varint,1,opt,name=attack_type,json=attackType,proto3" json:"attack_type,omitempty"`
+	TargetCharacterUniqueIds []uint32               `protobuf:"varint,2,rep,packed,name=target_character_unique_ids,json=targetCharacterUniqueIds,proto3" json:"target_character_unique_ids,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *AttackDetail) Reset() {
+	*x = AttackDetail{}
+	mi := &file_game_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AttackDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AttackDetail) ProtoMessage() {}
+
+func (x *AttackDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AttackDetail.ProtoReflect.Descriptor instead.
+func (*AttackDetail) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *AttackDetail) GetAttackType() int32 {
 	if x != nil {
 		return x.AttackType
 	}
 	return 0
 }
 
-func (x *GameActionLog) GetTargetCharacterUniqueIds() []uint32 {
+func (x *AttackDetail) GetTargetCharacterUniqueIds() []uint32 {
 	if x != nil {
 		return x.TargetCharacterUniqueIds
 	}
@@ -1187,7 +1346,7 @@ type ApplyEffectRequest struct {
 
 func (x *ApplyEffectRequest) Reset() {
 	*x = ApplyEffectRequest{}
-	mi := &file_game_proto_msgTypes[15]
+	mi := &file_game_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1199,7 +1358,7 @@ func (x *ApplyEffectRequest) String() string {
 func (*ApplyEffectRequest) ProtoMessage() {}
 
 func (x *ApplyEffectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[15]
+	mi := &file_game_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1212,7 +1371,7 @@ func (x *ApplyEffectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplyEffectRequest.ProtoReflect.Descriptor instead.
 func (*ApplyEffectRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{15}
+	return file_game_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ApplyEffectRequest) GetRoomId() uint32 {
@@ -1260,7 +1419,7 @@ type NewTurnRequest struct {
 
 func (x *NewTurnRequest) Reset() {
 	*x = NewTurnRequest{}
-	mi := &file_game_proto_msgTypes[16]
+	mi := &file_game_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1272,7 +1431,7 @@ func (x *NewTurnRequest) String() string {
 func (*NewTurnRequest) ProtoMessage() {}
 
 func (x *NewTurnRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[16]
+	mi := &file_game_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1285,7 +1444,7 @@ func (x *NewTurnRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NewTurnRequest.ProtoReflect.Descriptor instead.
 func (*NewTurnRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{16}
+	return file_game_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *NewTurnRequest) GetRoomId() uint32 {
@@ -1312,7 +1471,7 @@ type AcceptResponse struct {
 
 func (x *AcceptResponse) Reset() {
 	*x = AcceptResponse{}
-	mi := &file_game_proto_msgTypes[17]
+	mi := &file_game_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1324,7 +1483,7 @@ func (x *AcceptResponse) String() string {
 func (*AcceptResponse) ProtoMessage() {}
 
 func (x *AcceptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[17]
+	mi := &file_game_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1337,7 +1496,7 @@ func (x *AcceptResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptResponse.ProtoReflect.Descriptor instead.
 func (*AcceptResponse) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{17}
+	return file_game_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AcceptResponse) GetSuccess() bool {
@@ -1364,7 +1523,7 @@ type EndTurnRequest struct {
 
 func (x *EndTurnRequest) Reset() {
 	*x = EndTurnRequest{}
-	mi := &file_game_proto_msgTypes[18]
+	mi := &file_game_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1376,7 +1535,7 @@ func (x *EndTurnRequest) String() string {
 func (*EndTurnRequest) ProtoMessage() {}
 
 func (x *EndTurnRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[18]
+	mi := &file_game_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1389,7 +1548,7 @@ func (x *EndTurnRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndTurnRequest.ProtoReflect.Descriptor instead.
 func (*EndTurnRequest) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{18}
+	return file_game_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *EndTurnRequest) GetRoomId() uint32 {
@@ -1423,8 +1582,8 @@ const file_game_proto_rawDesc = "" +
 	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\"v\n" +
 	"\x10GridUpdateAction\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
-	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12,\n" +
-	"\x05grids\x18\x03 \x03(\v2\x16.game.network.GridInfoR\x05grids\"\x8b\x01\n" +
+	"\tplayer_id\x18\x03 \x01(\tR\bplayerId\x12,\n" +
+	"\x05grids\x18\x02 \x03(\v2\x16.game.network.GridInfoR\x05grids\"\x8b\x01\n" +
 	"\n" +
 	"MoveAction\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
@@ -1474,16 +1633,15 @@ const file_game_proto_rawDesc = "" +
 	"\ap1_rate\x18\x14 \x01(\x05R\x06p1Rate\x12\x17\n" +
 	"\ap2_rate\x18\x15 \x01(\x05R\x06p2Rate\x12C\n" +
 	"\x0fgame_action_log\x18\x16 \x01(\v2\x1b.game.network.GameActionLogR\rgameActionLog\x12\"\n" +
-	"\ris_turn_ended\x18\x17 \x01(\bR\visTurnEnded\"\xae\x01\n" +
+	"\ris_turn_ended\x18\x17 \x01(\bR\visTurnEnded\"\x86\x01\n" +
 	"\bGridInfo\x12\x1d\n" +
 	"\n" +
 	"position_x\x18\x01 \x01(\rR\tpositionX\x12\x1d\n" +
 	"\n" +
-	"position_y\x18\x02 \x01(\rR\tpositionY\x12\x1b\n" +
-	"\tgrid_type\x18\x03 \x01(\x05R\bgridType\x12\x1f\n" +
-	"\vis_selected\x18\x04 \x01(\bR\n" +
-	"isSelected\x12&\n" +
-	"\x0fis_attack_range\x18\x05 \x01(\bR\risAttackRange\"\x8a\x02\n" +
+	"position_y\x18\x02 \x01(\rR\tpositionY\x12\x1f\n" +
+	"\vdebuff_type\x18\x03 \x01(\x05R\n" +
+	"debuffType\x12\x1b\n" +
+	"\tgrid_type\x18\x04 \x01(\x05R\bgridType\"\x8a\x02\n" +
 	"\x0fUniqueCharacter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12!\n" +
 	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\x12\x13\n" +
@@ -1512,21 +1670,27 @@ const file_game_proto_rawDesc = "" +
 	"\x15registered_characters\x18\x01 \x03(\v2\x1d.game.network.UniqueCharacterR\x14registeredCharacters\"L\n" +
 	"\x15FetchActionLogRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1a\n" +
-	"\bsequence\x18\x02 \x01(\rR\bsequence\"\xd3\x02\n" +
+	"\bsequence\x18\x02 \x01(\rR\bsequence\"\xf1\x02\n" +
 	"\rGameActionLog\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
 	"\aroom_id\x18\x02 \x01(\rR\x06roomId\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\rR\bsequence\x12\x1b\n" +
-	"\tplayer_id\x18\x04 \x01(\tR\bplayerId\x12\x1f\n" +
-	"\vaction_type\x18\x05 \x01(\tR\n" +
+	"\tplayer_id\x18\x04 \x01(\tR\bplayerId\x129\n" +
+	"\vaction_type\x18\x05 \x01(\x0e2\x18.game.network.ActionTypeR\n" +
 	"actionType\x129\n" +
-	"\x19actor_character_unique_id\x18\x06 \x01(\rR\x16actorCharacterUniqueId\x12\x11\n" +
-	"\x04to_x\x18\a \x01(\rR\x03toX\x12\x11\n" +
-	"\x04to_y\x18\b \x01(\rR\x03toY\x12\x1f\n" +
-	"\vattack_type\x18\t \x01(\x05R\n" +
+	"\x19actor_character_unique_id\x18\x06 \x01(\rR\x16actorCharacterUniqueId\x12;\n" +
+	"\vmove_detail\x18\a \x01(\v2\x18.game.network.MoveDetailH\x00R\n" +
+	"moveDetail\x12A\n" +
+	"\rattack_detail\x18\b \x01(\v2\x1a.game.network.AttackDetailH\x00R\fattackDetailB\b\n" +
+	"\x06detail\"2\n" +
+	"\n" +
+	"MoveDetail\x12\x11\n" +
+	"\x04to_x\x18\x01 \x01(\rR\x03toX\x12\x11\n" +
+	"\x04to_y\x18\x02 \x01(\rR\x03toY\"n\n" +
+	"\fAttackDetail\x12\x1f\n" +
+	"\vattack_type\x18\x01 \x01(\x05R\n" +
 	"attackType\x12=\n" +
-	"\x1btarget_character_unique_ids\x18\n" +
-	" \x03(\rR\x18targetCharacterUniqueIds\"\xa5\x01\n" +
+	"\x1btarget_character_unique_ids\x18\x02 \x03(\rR\x18targetCharacterUniqueIds\"\xa5\x01\n" +
 	"\x12ApplyEffectRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
 	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12!\n" +
@@ -1542,7 +1706,13 @@ const file_game_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"F\n" +
 	"\x0eEndTurnRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
-	"\tplayer_id\x18\x02 \x01(\tR\bplayerId2\xf9\x06\n" +
+	"\tplayer_id\x18\x02 \x01(\tR\bplayerId*;\n" +
+	"\n" +
+	"ActionType\x12\x17\n" +
+	"\x13ACTION_TYPE_UNKNOWN\x10\x00\x12\b\n" +
+	"\x04MOVE\x10\x01\x12\n" +
+	"\n" +
+	"\x06ATTACK\x10\x022\xf9\x06\n" +
 	"\rBattleService\x12M\n" +
 	"\n" +
 	"CreateGame\x12\x1f.game.network.CreateGameRequest\x1a\x1e.game.network.GameDataResponse\x12O\n" +
@@ -1571,67 +1741,74 @@ func file_game_proto_rawDescGZIP() []byte {
 	return file_game_proto_rawDescData
 }
 
-var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_game_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_game_proto_goTypes = []any{
-	(*CreateGameRequest)(nil),          // 0: game.network.CreateGameRequest
-	(*StreamGameRequest)(nil),          // 1: game.network.StreamGameRequest
-	(*GridUpdateAction)(nil),           // 2: game.network.GridUpdateAction
-	(*MoveAction)(nil),                 // 3: game.network.MoveAction
-	(*AttackAction)(nil),               // 4: game.network.AttackAction
-	(*AttackInfo)(nil),                 // 5: game.network.AttackInfo
-	(*GameDataResponse)(nil),           // 6: game.network.GameDataResponse
-	(*GridInfo)(nil),                   // 7: game.network.GridInfo
-	(*UniqueCharacter)(nil),            // 8: game.network.UniqueCharacter
-	(*CharacterCondition)(nil),         // 9: game.network.CharacterCondition
-	(*GetGameDataRequest)(nil),         // 10: game.network.GetGameDataRequest
-	(*RegisterCharactersRequest)(nil),  // 11: game.network.RegisterCharactersRequest
-	(*RegisterCharactersResponse)(nil), // 12: game.network.RegisterCharactersResponse
-	(*FetchActionLogRequest)(nil),      // 13: game.network.FetchActionLogRequest
-	(*GameActionLog)(nil),              // 14: game.network.GameActionLog
-	(*ApplyEffectRequest)(nil),         // 15: game.network.ApplyEffectRequest
-	(*NewTurnRequest)(nil),             // 16: game.network.NewTurnRequest
-	(*AcceptResponse)(nil),             // 17: game.network.AcceptResponse
-	(*EndTurnRequest)(nil),             // 18: game.network.EndTurnRequest
-	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
+	(ActionType)(0),                    // 0: game.network.ActionType
+	(*CreateGameRequest)(nil),          // 1: game.network.CreateGameRequest
+	(*StreamGameRequest)(nil),          // 2: game.network.StreamGameRequest
+	(*GridUpdateAction)(nil),           // 3: game.network.GridUpdateAction
+	(*MoveAction)(nil),                 // 4: game.network.MoveAction
+	(*AttackAction)(nil),               // 5: game.network.AttackAction
+	(*AttackInfo)(nil),                 // 6: game.network.AttackInfo
+	(*GameDataResponse)(nil),           // 7: game.network.GameDataResponse
+	(*GridInfo)(nil),                   // 8: game.network.GridInfo
+	(*UniqueCharacter)(nil),            // 9: game.network.UniqueCharacter
+	(*CharacterCondition)(nil),         // 10: game.network.CharacterCondition
+	(*GetGameDataRequest)(nil),         // 11: game.network.GetGameDataRequest
+	(*RegisterCharactersRequest)(nil),  // 12: game.network.RegisterCharactersRequest
+	(*RegisterCharactersResponse)(nil), // 13: game.network.RegisterCharactersResponse
+	(*FetchActionLogRequest)(nil),      // 14: game.network.FetchActionLogRequest
+	(*GameActionLog)(nil),              // 15: game.network.GameActionLog
+	(*MoveDetail)(nil),                 // 16: game.network.MoveDetail
+	(*AttackDetail)(nil),               // 17: game.network.AttackDetail
+	(*ApplyEffectRequest)(nil),         // 18: game.network.ApplyEffectRequest
+	(*NewTurnRequest)(nil),             // 19: game.network.NewTurnRequest
+	(*AcceptResponse)(nil),             // 20: game.network.AcceptResponse
+	(*EndTurnRequest)(nil),             // 21: game.network.EndTurnRequest
+	(*timestamppb.Timestamp)(nil),      // 22: google.protobuf.Timestamp
 }
 var file_game_proto_depIdxs = []int32{
-	7,  // 0: game.network.GridUpdateAction.grids:type_name -> game.network.GridInfo
-	5,  // 1: game.network.AttackAction.attack_infos:type_name -> game.network.AttackInfo
-	19, // 2: game.network.GameDataResponse.turn_start_at:type_name -> google.protobuf.Timestamp
-	8,  // 3: game.network.GameDataResponse.characters:type_name -> game.network.UniqueCharacter
-	19, // 4: game.network.GameDataResponse.finished_at:type_name -> google.protobuf.Timestamp
-	5,  // 5: game.network.GameDataResponse.attack_infos:type_name -> game.network.AttackInfo
-	7,  // 6: game.network.GameDataResponse.grids:type_name -> game.network.GridInfo
-	14, // 7: game.network.GameDataResponse.game_action_log:type_name -> game.network.GameActionLog
-	9,  // 8: game.network.UniqueCharacter.conditions:type_name -> game.network.CharacterCondition
-	8,  // 9: game.network.RegisterCharactersResponse.registered_characters:type_name -> game.network.UniqueCharacter
-	0,  // 10: game.network.BattleService.CreateGame:input_type -> game.network.CreateGameRequest
-	10, // 11: game.network.BattleService.GetGameData:input_type -> game.network.GetGameDataRequest
-	11, // 12: game.network.BattleService.RegisterCharacters:input_type -> game.network.RegisterCharactersRequest
-	1,  // 13: game.network.BattleService.StreamGame:input_type -> game.network.StreamGameRequest
-	3,  // 14: game.network.BattleService.ApplyMove:input_type -> game.network.MoveAction
-	4,  // 15: game.network.BattleService.ApplyAttack:input_type -> game.network.AttackAction
-	2,  // 16: game.network.BattleService.ApplyGridUpdate:input_type -> game.network.GridUpdateAction
-	15, // 17: game.network.BattleService.ApplyEffect:input_type -> game.network.ApplyEffectRequest
-	18, // 18: game.network.BattleService.EndTurn:input_type -> game.network.EndTurnRequest
-	16, // 19: game.network.BattleService.NewTurn:input_type -> game.network.NewTurnRequest
-	13, // 20: game.network.BattleService.FetchActionLog:input_type -> game.network.FetchActionLogRequest
-	6,  // 21: game.network.BattleService.CreateGame:output_type -> game.network.GameDataResponse
-	6,  // 22: game.network.BattleService.GetGameData:output_type -> game.network.GameDataResponse
-	12, // 23: game.network.BattleService.RegisterCharacters:output_type -> game.network.RegisterCharactersResponse
-	6,  // 24: game.network.BattleService.StreamGame:output_type -> game.network.GameDataResponse
-	17, // 25: game.network.BattleService.ApplyMove:output_type -> game.network.AcceptResponse
-	17, // 26: game.network.BattleService.ApplyAttack:output_type -> game.network.AcceptResponse
-	17, // 27: game.network.BattleService.ApplyGridUpdate:output_type -> game.network.AcceptResponse
-	17, // 28: game.network.BattleService.ApplyEffect:output_type -> game.network.AcceptResponse
-	17, // 29: game.network.BattleService.EndTurn:output_type -> game.network.AcceptResponse
-	17, // 30: game.network.BattleService.NewTurn:output_type -> game.network.AcceptResponse
-	14, // 31: game.network.BattleService.FetchActionLog:output_type -> game.network.GameActionLog
-	21, // [21:32] is the sub-list for method output_type
-	10, // [10:21] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	8,  // 0: game.network.GridUpdateAction.grids:type_name -> game.network.GridInfo
+	6,  // 1: game.network.AttackAction.attack_infos:type_name -> game.network.AttackInfo
+	22, // 2: game.network.GameDataResponse.turn_start_at:type_name -> google.protobuf.Timestamp
+	9,  // 3: game.network.GameDataResponse.characters:type_name -> game.network.UniqueCharacter
+	22, // 4: game.network.GameDataResponse.finished_at:type_name -> google.protobuf.Timestamp
+	6,  // 5: game.network.GameDataResponse.attack_infos:type_name -> game.network.AttackInfo
+	8,  // 6: game.network.GameDataResponse.grids:type_name -> game.network.GridInfo
+	15, // 7: game.network.GameDataResponse.game_action_log:type_name -> game.network.GameActionLog
+	10, // 8: game.network.UniqueCharacter.conditions:type_name -> game.network.CharacterCondition
+	9,  // 9: game.network.RegisterCharactersResponse.registered_characters:type_name -> game.network.UniqueCharacter
+	0,  // 10: game.network.GameActionLog.action_type:type_name -> game.network.ActionType
+	16, // 11: game.network.GameActionLog.move_detail:type_name -> game.network.MoveDetail
+	17, // 12: game.network.GameActionLog.attack_detail:type_name -> game.network.AttackDetail
+	1,  // 13: game.network.BattleService.CreateGame:input_type -> game.network.CreateGameRequest
+	11, // 14: game.network.BattleService.GetGameData:input_type -> game.network.GetGameDataRequest
+	12, // 15: game.network.BattleService.RegisterCharacters:input_type -> game.network.RegisterCharactersRequest
+	2,  // 16: game.network.BattleService.StreamGame:input_type -> game.network.StreamGameRequest
+	4,  // 17: game.network.BattleService.ApplyMove:input_type -> game.network.MoveAction
+	5,  // 18: game.network.BattleService.ApplyAttack:input_type -> game.network.AttackAction
+	3,  // 19: game.network.BattleService.ApplyGridUpdate:input_type -> game.network.GridUpdateAction
+	18, // 20: game.network.BattleService.ApplyEffect:input_type -> game.network.ApplyEffectRequest
+	21, // 21: game.network.BattleService.EndTurn:input_type -> game.network.EndTurnRequest
+	19, // 22: game.network.BattleService.NewTurn:input_type -> game.network.NewTurnRequest
+	14, // 23: game.network.BattleService.FetchActionLog:input_type -> game.network.FetchActionLogRequest
+	7,  // 24: game.network.BattleService.CreateGame:output_type -> game.network.GameDataResponse
+	7,  // 25: game.network.BattleService.GetGameData:output_type -> game.network.GameDataResponse
+	13, // 26: game.network.BattleService.RegisterCharacters:output_type -> game.network.RegisterCharactersResponse
+	7,  // 27: game.network.BattleService.StreamGame:output_type -> game.network.GameDataResponse
+	20, // 28: game.network.BattleService.ApplyMove:output_type -> game.network.AcceptResponse
+	20, // 29: game.network.BattleService.ApplyAttack:output_type -> game.network.AcceptResponse
+	20, // 30: game.network.BattleService.ApplyGridUpdate:output_type -> game.network.AcceptResponse
+	20, // 31: game.network.BattleService.ApplyEffect:output_type -> game.network.AcceptResponse
+	20, // 32: game.network.BattleService.EndTurn:output_type -> game.network.AcceptResponse
+	20, // 33: game.network.BattleService.NewTurn:output_type -> game.network.AcceptResponse
+	15, // 34: game.network.BattleService.FetchActionLog:output_type -> game.network.GameActionLog
+	24, // [24:35] is the sub-list for method output_type
+	13, // [13:24] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_game_proto_init() }
@@ -1639,18 +1816,23 @@ func file_game_proto_init() {
 	if File_game_proto != nil {
 		return
 	}
+	file_game_proto_msgTypes[14].OneofWrappers = []any{
+		(*GameActionLog_MoveDetail)(nil),
+		(*GameActionLog_AttackDetail)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_proto_rawDesc), len(file_game_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   19,
+			NumEnums:      1,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_game_proto_goTypes,
 		DependencyIndexes: file_game_proto_depIdxs,
+		EnumInfos:         file_game_proto_enumTypes,
 		MessageInfos:      file_game_proto_msgTypes,
 	}.Build()
 	File_game_proto = out.File

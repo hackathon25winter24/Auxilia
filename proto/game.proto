@@ -43,8 +43,8 @@ message StreamGameRequest {
 
 message GridUpdateAction {
   uint32 room_id = 1;
-  string player_id = 2;
-  repeated GridInfo grids = 3;
+  string player_id = 3;
+  repeated GridInfo grids = 2;
 }
 
 message MoveAction {
@@ -98,9 +98,8 @@ message GameDataResponse {
 message GridInfo {
   uint32 position_x = 1;
   uint32 position_y = 2;
-  int32 grid_type = 3;
-  bool is_selected = 4;
-  bool is_attack_range = 5;
+  int32 debuff_type = 3;
+  int32 grid_type = 4;
 }
 
 message UniqueCharacter {
@@ -142,20 +141,32 @@ message FetchActionLogRequest {
 message GameActionLog {
   uint32 id = 1;
   uint32 room_id = 2;
-  uint32 sequence = 3;       // 通し番号（1, 2, 3...）
-  string player_id = 4;      // 行動したプレイヤーID
-  string action_type = 5;    // "MOVE" または "ATTACK"
+  uint32 sequence = 3;
+  string player_id = 4;
+  ActionType action_type = 5;
+  uint32 actor_character_unique_id = 6;
 
-  uint32 actor_character_unique_id = 6; // 行動したキャラのID
+  // 行動タイプによって中身が切り替わることを明示
+  oneof detail {
+    MoveDetail move_detail = 7;
+    AttackDetail attack_detail = 8;
+  }
+}
 
-  //（action_type == "MOVE" の時のみ使用）
-  uint32 to_x = 7;
-  uint32 to_y = 8;
+enum ActionType {
+  ACTION_TYPE_UNKNOWN = 0;
+  MOVE = 1;
+  ATTACK = 2;
+}
 
-  //（action_type == "ATTACK" の時のみ使用）
-  int32 attack_type = 9;
+message MoveDetail {
+  uint32 to_x = 1;
+  uint32 to_y = 2;
+}
 
-  repeated uint32 target_character_unique_ids = 10; 
+message AttackDetail {
+  int32 attack_type = 1;
+  repeated uint32 target_character_unique_ids = 2; 
 }
 
 message ApplyEffectRequest {

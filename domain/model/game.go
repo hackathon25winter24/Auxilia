@@ -35,13 +35,14 @@ type GameData struct {
 }
 
 type Grid struct {
-	ID            uint `gorm:"primaryKey"`
-	RoomID        uint `gorm:"index"`
-	PositionX     uint
-	PositionY     uint
-	GridType      int32
-	IsSelected    bool
-	IsAttackRange bool
+	ID         uint32    `gorm:"primaryKey;autoIncrement"`
+	RoomID     uint32    `gorm:"uniqueIndex:idx_room_pos;not null"` // 複合ユニークインデックス
+	PositionX  uint32    `gorm:"uniqueIndex:idx_room_pos;not null"`
+	PositionY  uint32    `gorm:"uniqueIndex:idx_room_pos;not null"`
+	GridType   int32     `gorm:"not null;default:0"`
+	DebuffType int32     `gorm:"not null;default:0"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // TableName overrides the table name used by GORM
