@@ -119,8 +119,7 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 			PositionX:     uint32(grid.PositionX),
 			PositionY:     uint32(grid.PositionY),
 			GridType:      grid.GridType,
-			IsSelected:    grid.IsSelected,
-			IsAttackRange: grid.IsAttackRange,
+			RemainingTurn: int32(grid.RemainingTurn),
 		})
 	}
 
@@ -294,8 +293,7 @@ func (h *BattleHandler) ApplyGridUpdate(ctx context.Context, req *pb.GridUpdateA
 			PositionX:     uint(g.PositionX),
 			PositionY:     uint(g.PositionY),
 			GridType:      g.GridType,
-			IsSelected:    g.IsSelected,
-			IsAttackRange: g.IsAttackRange,
+			RemainingTurn: int32(g.RemainingTurn),
 		})
 	}
 
