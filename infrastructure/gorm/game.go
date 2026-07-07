@@ -337,16 +337,39 @@ func (r *BattleRepository) ApplyGridUpdate(roomID uint32, playerID string, grids
 		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
 
 		for _, g := range grids {
+			if g.RemainingTurn < 0{
+				if err := tx.Model(&model.Grid{}).
+					Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
+					Delete(&model.Grid{}).Error; err != nil {
+					return err
+				}
+				continue
+			}
 			if err := tx.Model(&model.Grid{}).
 				Where("room_id = ? AND position_x = ? AND position_y = ?", roomID, g.PositionX, g.PositionY).
 				Updates(map[string]any{
 					"grid_type":       g.GridType,
-					"is_selected":     g.IsSelected,
-					"is_attack_range": g.IsAttackRange,
+					"remaining_turn":  g.RemainingTurn,
 				}).Error; err != nil {
 				return err
 			}
 		}
+		return nil
+	})
+}
+
+func (r *BattleRepository) DecrementGridRemainingTurn(roomID uint32) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.Grid{}).
+			Where("room_id = ? AND remaining_turn > 0", roomID).
+			Update("remaining_turn", gorm.Expr("remaining_turn - ?", 1)).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("room_id = ? AND remaining_turn <= 0", roomID).Delete(&model.Grid{}).Error; err != nil {
+			return err
+		}
+
 		return nil
 	})
 }

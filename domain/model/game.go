@@ -40,8 +40,7 @@ type Grid struct {
 	PositionX     uint
 	PositionY     uint
 	GridType      int32
-	IsSelected    bool
-	IsAttackRange bool
+	RemainingTurn int32
 }
 
 // TableName overrides the table name used by GORM

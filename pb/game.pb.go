@@ -625,8 +625,7 @@ type GridInfo struct {
 	PositionX     uint32                 `protobuf:"varint,1,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
 	PositionY     uint32                 `protobuf:"varint,2,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
 	GridType      int32                  `protobuf:"varint,3,opt,name=grid_type,json=gridType,proto3" json:"grid_type,omitempty"`
-	IsSelected    bool                   `protobuf:"varint,4,opt,name=is_selected,json=isSelected,proto3" json:"is_selected,omitempty"`
-	IsAttackRange bool                   `protobuf:"varint,5,opt,name=is_attack_range,json=isAttackRange,proto3" json:"is_attack_range,omitempty"`
+	RemainingTurn int32                  `protobuf:"varint,4,opt,name=remaining_turn,json=remainingTurn,proto3" json:"remaining_turn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -682,18 +681,11 @@ func (x *GridInfo) GetGridType() int32 {
 	return 0
 }
 
-func (x *GridInfo) GetIsSelected() bool {
+func (x *GridInfo) GetRemainingTurn() int32 {
 	if x != nil {
-		return x.IsSelected
+		return x.RemainingTurn
 	}
-	return false
-}
-
-func (x *GridInfo) GetIsAttackRange() bool {
-	if x != nil {
-		return x.IsAttackRange
-	}
-	return false
+	return 0
 }
 
 type UniqueCharacter struct {
@@ -1474,16 +1466,14 @@ const file_game_proto_rawDesc = "" +
 	"\ap1_rate\x18\x14 \x01(\x05R\x06p1Rate\x12\x17\n" +
 	"\ap2_rate\x18\x15 \x01(\x05R\x06p2Rate\x12C\n" +
 	"\x0fgame_action_log\x18\x16 \x01(\v2\x1b.game.network.GameActionLogR\rgameActionLog\x12\"\n" +
-	"\ris_turn_ended\x18\x17 \x01(\bR\visTurnEnded\"\xae\x01\n" +
+	"\ris_turn_ended\x18\x17 \x01(\bR\visTurnEnded\"\x8c\x01\n" +
 	"\bGridInfo\x12\x1d\n" +
 	"\n" +
 	"position_x\x18\x01 \x01(\rR\tpositionX\x12\x1d\n" +
 	"\n" +
 	"position_y\x18\x02 \x01(\rR\tpositionY\x12\x1b\n" +
-	"\tgrid_type\x18\x03 \x01(\x05R\bgridType\x12\x1f\n" +
-	"\vis_selected\x18\x04 \x01(\bR\n" +
-	"isSelected\x12&\n" +
-	"\x0fis_attack_range\x18\x05 \x01(\bR\risAttackRange\"\x8a\x02\n" +
+	"\tgrid_type\x18\x03 \x01(\x05R\bgridType\x12%\n" +
+	"\x0eremaining_turn\x18\x04 \x01(\x05R\rremainingTurn\"\x8a\x02\n" +
 	"\x0fUniqueCharacter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12!\n" +
 	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\x12\x13\n" +
