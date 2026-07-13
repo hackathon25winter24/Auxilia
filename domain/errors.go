@@ -14,4 +14,5 @@ var (
 	ErrCharacterNotFound    = errors.New("character does not exist")
 	ErrInvalidTurn          = errors.New("invalid turn")
 	ErrForbiddenAction      = errors.New("forbidden action")
+	ErrInsufficientCost		  = errors.New("insufficient cost")
 )

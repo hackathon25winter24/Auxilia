@@ -104,32 +104,43 @@ func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomRespons
 }
 
 func (h *RoomHandler) JoinRoom(ctx context.Context, req *pb.JoinRoomRequest) (*pb.JoinRoomResponse, error) {
-	if err := h.repo.JoinRoom(req.RoomId, req.UserId); err != nil {
-		if errors.Is(err, domain.ErrRoomNotFound) {
-			return nil, status.Errorf(codes.NotFound, "room with ID %d not found", req.RoomId)
-		}
+  // 1. 同一トランザクションで入室とリスト取得を実行
+  rooms, err := h.repo.JoinRoom(req.RoomId, req.UserId)
+  if err != nil {
+    if errors.Is(err, domain.ErrRoomNotFound) {
+      return nil, status.Errorf(codes.NotFound, "room with ID %d not found", req.RoomId)
+    }
+    if errors.Is(err, domain.ErrRoomFull) {
+      return nil, status.Errorf(codes.ResourceExhausted, "room with ID %d is full", req.RoomId)
+    }
+    if errors.Is(err, domain.ErrMatchStarted) {
+      return nil, status.Errorf(codes.FailedPrecondition, "match in room with ID %d has already started", req.RoomId)
+    }
+    return nil, status.Error(codes.Internal, err.Error())
+  }
 
-		if errors.Is(err, domain.ErrRoomFull) {
-			return nil, status.Errorf(codes.ResourceExhausted, "room with ID %d is full", req.RoomId)
-		}
+  var pbRooms []*pb.Room
+  for _, r := range rooms {
+    pbRooms = append(pbRooms, &pb.Room{
+      RoomId:   r.RoomID,
+      UserId:   r.UserID,
+      State:    r.State,
+      IsReady:  r.IsReady,
+      JoinedAt: r.JoinedAt.Format(time.RFC3339), // 時間のフォーマットも同一化
+    })
+  }
 
-		if errors.Is(err, domain.ErrMatchStarted) {
-			return nil, status.Errorf(codes.FailedPrecondition, "match in room with ID %d has already started", req.RoomId)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+  // 3. ブロードキャスト用のレスポンスを作成
+  broadcastResponse := &pb.ListRoomResponse{
+    Rooms: pbRooms,
+  }
 
-	response, err := h.ListRoom(ctx, &pb.ListRoomRequest{RoomId: req.RoomId})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list rooms after joining: %v", err)
-	}
+  // 他の部屋メンバーに通知
+  h.broadcastToRoom(req.RoomId, broadcastResponse)
 
-	h.broadcastToRoom(req.RoomId, response)
-
-	return &pb.JoinRoomResponse{
-		Rooms: response.Rooms,
-	}, nil
-
+  return &pb.JoinRoomResponse{
+    Rooms: pbRooms,
+  }, nil
 }
 
 func (h *RoomHandler) LeaveRoom(ctx context.Context, req *pb.LeaveRoomRequest) (*pb.LeaveRoomResponse, error) {

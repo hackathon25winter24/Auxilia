@@ -147,6 +147,13 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 
 		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
 
+		var cost uint
+		cost = uint(model.CharacterData[GetCharacterIDFromUCID(characterUniqueID)].MoveCost)
+
+		if err := r.consumePlayerCost(tx, gameData.ID, gameData.Is1PTurn, cost); err != nil {
+      return err
+    }
+
 		if err := tx.Model(&model.UniqueCharacter{}).Where("id = ?", character.ID).Updates(map[string]any{
 			"position_x": toX,
 			"position_y": toY,
@@ -195,22 +202,33 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 
 		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
 
+		var cost uint
+		cost = uint(model.CharacterData[GetCharacterIDFromUCID(attackerCharacterUniqueID)].AttackCosts[attackType])
+
+		if err := r.consumePlayerCost(tx, gameData.ID, gameData.Is1PTurn, cost); err != nil {
+      return err
+    }
+
 		var targetIDs []string
+		var damageLog string
 		for _, info := range attackInfos {
 			// 💡 コメント仕様：IDが98または99なら拠点のHP(BaseHP)を直接削る力技マッピング
 			if info.AttackedCharacterID == 98 {
 				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp1", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			} else if info.AttackedCharacterID == 99 {
 				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp2", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			} else {
 				// 通常のキャラクターへのダメージ適用
 				if err := tx.Model(&model.UniqueCharacter{}).Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).Update("hp", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			}
 			targetIDs = append(targetIDs, fmt.Sprintf("%d", info.AttackedCharacterID))
 		}
@@ -228,9 +246,39 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			ActorCharacterUniqueID: uint(attackerCharacterUniqueID),
 			AttackType:             int(attackType),
 			TargetCharacterIDs:     strings.Join(targetIDs, ","),
+			DamageLog:              damageLog,
 		}
 		return tx.Create(&actionLog).Error
 	})
+}
+
+func (r *BattleRepository) consumePlayerCost(tx *gorm.DB, gameDataID uint, is1PTurn bool, cost uint) error {
+	if is1PTurn {
+		// 1Pのコストチェック
+		var cost1P uint
+		if err := tx.Model(&model.GameData{}).Where("id = ?", gameDataID).Pluck("cost1_p", &cost1P).Error; err != nil {
+			return err
+		}
+		if cost1P < cost {
+			return domain.ErrInsufficientCost
+		}
+
+		return tx.Model(&model.GameData{}).
+			Where("id = ?", gameDataID).
+			Update("cost1_p", gorm.Expr("cost1_p - ?", cost)).Error
+	} else {
+		var cost2P uint
+		if err := tx.Model(&model.GameData{}).Where("id = ?", gameDataID).Pluck("cost2_p", &cost2P).Error; err != nil {
+			return err
+		}
+		if cost2P < cost {
+			return domain.ErrInsufficientCost
+		}
+
+		return tx.Model(&model.GameData{}).
+			Where("id = ?", gameDataID).
+			Update("cost2_p", gorm.Expr("cost2_p - ?", cost)).Error
+	}
 }
 
 // EndTurn: 💡 ターン終了フラグを立てるだけに変更（ステートマシンの要件反映）
@@ -572,4 +620,8 @@ func (r *BattleRepository) FetchActionLog(roomID uint32, sequence uint32) (*mode
 		return nil, err
 	}
 	return &logData, nil
+}
+
+func GetCharacterIDFromUCID(uniqueCharacterID uint32) uint {
+	return uint(uniqueCharacterID / 1000)
 }
