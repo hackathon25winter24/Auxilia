@@ -180,76 +180,94 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 }
 
 func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerCharacterUniqueID uint32, attackType int32, attackInfos []model.AttackInfoData) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		var gameData model.GameData
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
-			return err
-		}
-
-		if gameData.IsFinished || gameData.IsTurnEnded { return nil }
-		if attackType < model.AttackType0 || attackType > model.AttackType3 { return domain.ErrForbiddenAction }
-
-		expectedPlayerID := gameData.Player2ID
-		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
-		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
-
-		var character model.UniqueCharacter
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", attackerCharacterUniqueID, roomID).First(&character).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
-			return err
-		}
-
-		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
-
-		var cost uint
-		cost = uint(model.CharacterData[GetCharacterIDFromUCID(attackerCharacterUniqueID)].AttackCosts[attackType])
-
-		if err := r.consumePlayerCost(tx, gameData.ID, gameData.Is1PTurn, cost); err != nil {
+  return r.db.Transaction(func(tx *gorm.DB) error {
+    var gameData model.GameData
+    // 後のダメージ計算で gameData.BaseHP1 / BaseHP2 を使うため、ここで最新状態をロック取得
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+      if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrGameNotFound }
       return err
     }
 
-		var targetIDs []string
-		var damageLog string
-		for _, info := range attackInfos {
-			// 💡 コメント仕様：IDが98または99なら拠点のHP(BaseHP)を直接削る力技マッピング
-			if info.AttackedCharacterID == 98 {
-				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp1", info.NewHP).Error; err != nil {
-					return err
-				}
-				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
-			} else if info.AttackedCharacterID == 99 {
-				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp2", info.NewHP).Error; err != nil {
-					return err
-				}
-				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
-			} else {
-				// 通常のキャラクターへのダメージ適用
-				if err := tx.Model(&model.UniqueCharacter{}).Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).Update("hp", info.NewHP).Error; err != nil {
-					return err
-				}
-				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
-			}
-			targetIDs = append(targetIDs, fmt.Sprintf("%d", info.AttackedCharacterID))
-		}
+    if gameData.IsFinished || gameData.IsTurnEnded { return nil }
+    if attackType < model.AttackType0 || attackType > model.AttackType3 { return domain.ErrForbiddenAction }
 
-		var lastSequence uint
-		if err := tx.Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
+    expectedPlayerID := gameData.Player2ID
+    if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
+    if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
 
-		actionLog := model.GameActionLog{
-			RoomID:                 uint(roomID),
-			Sequence:               lastSequence + 1,
-			PlayerID:               playerID,
-			ActionType:             "ATTACK",
-			ActorCharacterUniqueID: uint(attackerCharacterUniqueID),
-			AttackType:             int(attackType),
-			TargetCharacterIDs:     strings.Join(targetIDs, ","),
-			DamageLog:              damageLog,
-		}
-		return tx.Create(&actionLog).Error
-	})
+    var character model.UniqueCharacter
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", attackerCharacterUniqueID, roomID).First(&character).Error; err != nil {
+      if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
+      return err
+    }
+
+    if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
+
+    //  一番最初の型エラー対策：GetCharacterIDFromUCID の結果を uint(...) でキャストしてマップのキーにする
+    cost := uint(model.CharacterData[uint(GetCharacterIDFromUCID(attackerCharacterUniqueID))].AttackCosts[attackType])
+
+    if err := r.consumePlayerCost(tx, gameData.ID, gameData.Is1PTurn, cost); err != nil {
+      return err
+    }
+
+    var targetIDs []string
+    var damageLog string
+    
+    //  ダメージログを「-対象ID(ダメージ量)」の形式で組み立てる
+    for _, info := range attackInfos {
+      var damage int32
+
+      if info.AttackedCharacterID == 98 {
+        // 1P拠点へのダメージ計算 (元のHP - 新しいHP)
+        damage = int32(gameData.BaseHP1) - int32(info.NewHP)
+        
+        if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp1", info.NewHP).Error; err != nil {
+          return err
+        }
+      } else if info.AttackedCharacterID == 99 {
+        // 2P拠点へのダメージ計算 (元のHP - 新しいHP)
+        damage = int32(gameData.BaseHP2) - int32(info.NewHP)
+        
+        if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp2", info.NewHP).Error; err != nil {
+          return err
+        }
+      } else {
+        // 通常キャラクターへのダメージ計算
+        //  変更前の元のHPを知るために、対象キャラクターのデータを一度取得する
+        var targetChar model.UniqueCharacter
+        if err := tx.Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).First(&targetChar).Error; err != nil {
+          if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
+          return err
+        }
+        damage = int32(targetChar.HP) - int32(info.NewHP)
+
+        if err := tx.Model(&model.UniqueCharacter{}).Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).Update("hp", info.NewHP).Error; err != nil {
+          return err
+        }
+      }
+
+      //  ログに「ダメージ量」を記録するように変更
+      damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, damage)
+      targetIDs = append(targetIDs, fmt.Sprintf("%d", info.AttackedCharacterID))
+    }
+
+    var lastSequence uint
+    if err := tx.Model(&model.GameActionLog{}).Where("room_id = ?", roomID).Order("sequence DESC").Limit(1).Pluck("sequence", &lastSequence).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+      return err
+    }
+
+    actionLog := model.GameActionLog{
+      RoomID:                 uint(roomID),
+      Sequence:               lastSequence + 1,
+      PlayerID:               playerID,
+      ActionType:             "ATTACK",
+      ActorCharacterUniqueID: uint(attackerCharacterUniqueID),
+      AttackType:             int(attackType),
+      TargetCharacterIDs:     strings.Join(targetIDs, ","),
+      DamageLog:              damageLog, // 修正されたダメージ量ベースのログ
+    }
+    return tx.Create(&actionLog).Error
+  })
 }
 
 func (r *BattleRepository) consumePlayerCost(tx *gorm.DB, gameDataID uint, is1PTurn bool, cost uint) error {
