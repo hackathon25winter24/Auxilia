@@ -85,6 +85,7 @@ type GameActionLog struct {
 	RoomID    uint   `gorm:"uniqueIndex:idx_room_seq"` // 部屋IDと通し番号の複合インデックス
 	Sequence  uint   `gorm:"uniqueIndex:idx_room_seq"` // 💡 通し番号（1, 2, 3... と増えていく）
 	PlayerID  string // 誰が実行したか
+	DamageLog string // ダメージログ
 
 	ActionType             string // "MOVE" または "ATTACK"
 	ActorCharacterUniqueID uint   // 行動したキャラのID
@@ -145,4 +146,17 @@ var DefaultCharacterMoveCosts = map[uint]int{
 	8: 10,
 	9: 5,
 	10: 10,
+}
+
+var characterData = map[uint]struct {
+	Name string
+	HP   int
+	MoveCost int
+	AttackCost1 int
+	AttackCost2 int
+	AttackCost3 int
+}{
+	0:  {"Sophie", 150, 10, 10,20,50},
+	1:  {"Jude", 350, 10, 10,20,30},
+	2:  {"Nadia", 200, 7, 10,20,30},
 }

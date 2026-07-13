@@ -196,21 +196,25 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
 
 		var targetIDs []string
+		var damageLog string
 		for _, info := range attackInfos {
 			// 💡 コメント仕様：IDが98または99なら拠点のHP(BaseHP)を直接削る力技マッピング
 			if info.AttackedCharacterID == 98 {
 				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp1", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			} else if info.AttackedCharacterID == 99 {
 				if err := tx.Model(&model.GameData{}).Where("id = ?", gameData.ID).Update("base_hp2", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			} else {
 				// 通常のキャラクターへのダメージ適用
 				if err := tx.Model(&model.UniqueCharacter{}).Where("id = ? AND room_id = ?", info.AttackedCharacterID, roomID).Update("hp", info.NewHP).Error; err != nil {
 					return err
 				}
+				damageLog += fmt.Sprintf("-%d(%d)", info.AttackedCharacterID, info.NewHP)
 			}
 			targetIDs = append(targetIDs, fmt.Sprintf("%d", info.AttackedCharacterID))
 		}
@@ -228,8 +232,52 @@ func (r *BattleRepository) ApplyAttack(roomID uint32, playerID string, attackerC
 			ActorCharacterUniqueID: uint(attackerCharacterUniqueID),
 			AttackType:             int(attackType),
 			TargetCharacterIDs:     strings.Join(targetIDs, ","),
+			DamageLog:              damageLog,
 		}
 		return tx.Create(&actionLog).Error
+	})
+}
+
+func (r *BattleRepository) ApplyCostChange(roomID uint32, playerID string, cost uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var gameData model.GameData
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("room_id = ?", roomID).First(&gameData).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return domain.ErrGameNotFound
+			}
+			return err
+		}
+
+		if gameData.IsFinished || gameData.IsTurnEnded {
+			return nil
+		}
+
+		expectedPlayerID := gameData.Player2ID
+		if gameData.Is1PTurn {
+			expectedPlayerID = gameData.Player1ID
+		}
+		if playerID != expectedPlayerID {
+			return domain.ErrInvalidTurn
+		}
+
+		if gameData.Is1PTurn {
+			if gameData.Cost1P < cost {
+				return domain.ErrInsufficientCost
+			}
+			// DB側で安全に引き算
+			return tx.Model(&model.GameData{}).
+				Where("id = ?", gameData.ID).
+				Update("cost1_p", gorm.Expr("cost1_p - ?", cost)).Error
+		} else {
+			// コストが足りているかチェック
+			if gameData.Cost2P < cost {
+				return domain.ErrInsufficientCost
+			}
+			// DB側で安全に引き算
+			return tx.Model(&model.GameData{}).
+				Where("id = ?", gameData.ID).
+				Update("cost2_p", gorm.Expr("cost2_p - ?", cost)).Error
+		}
 	})
 }
 
