@@ -148,15 +148,13 @@ var DefaultCharacterMoveCosts = map[uint]int{
 	10: 10,
 }
 
-var characterData = map[uint]struct {
+var CharacterData = map[uint]struct {
 	Name string
 	HP   int
 	MoveCost int
-	AttackCost1 int
-	AttackCost2 int
-	AttackCost3 int
+	AttackCosts []int
 }{
-	0:  {"Sophie", 150, 10, 10,20,50},
-	1:  {"Jude", 350, 10, 10,20,30},
-	2:  {"Nadia", 200, 7, 10,20,30},
+	0:  {"Sophie", 150, 10,[]int{10, 20, 50}},
+	1:  {"Jude", 350, 10, []int{10, 20, 30}},
+	2:  {"Nadia", 200, 7, []int{10, 20, 30}},
 }

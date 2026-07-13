@@ -6,7 +6,7 @@ import (
 )
 
 type RoomRepository interface {
-	JoinRoom(roomID int32, userID string) error
+	JoinRoom(roomID int32, userID string) ([]model.Room, error)
 	LeaveRoom(roomID int32, userID string) error
 	ListRoom(ctx context.Context, roomID int32) ([]model.Room, error)
 	EnterRing(roomID int32, userID string) error

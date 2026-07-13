@@ -21,58 +21,74 @@ func NewRoomRepository(db *gorm.DB) *RoomRepository {
 	return &RoomRepository{db: db}
 }
 
-func (r *RoomRepository) JoinRoom(roomID int32, userID string) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+func (r *RoomRepository) JoinRoom(roomID int32, userID string) ([]model.Room, error) {
+  var rooms []model.Room // 💡 最新のメンバーリストを格納する変数
 
-		// 【追加】全てのroom操作で共通して同一IDのroom_matchをロックする。そうすることで同一部屋の変更処理が直列化される
-		var roomLock model.RoomMatch
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
-			return err
-		}
+  err := r.db.Transaction(func(tx *gorm.DB) error {
 
-		// 1. room_matchが存在するか確認（部屋削除と同時に入室させないため）
-		var roomMatch model.RoomMatch
-		if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return domain.ErrRoomNotFound
-			}
-			return err
-		}
+    // 【追加】全てのroom操作で共通して同一IDのroom_matchをロックする
+    var roomLock model.RoomMatch
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
+      return err
+    }
 
-		// 2. 既に同じユーザーが参加している場合は削除する（再参加対応）
-		if err := tx.Where("room_id = ? AND user_id = ?", roomID, userID).Delete(&model.Room{}).Error; err != nil {
-			return err
-		}
+    // 1. room_matchが存在するか確認
+    var roomMatch model.RoomMatch
+    if err := tx.Where("id = ?", roomID).First(&roomMatch).Error; err != nil {
+      if errors.Is(err, gorm.ErrRecordNotFound) {
+        return domain.ErrRoomNotFound
+      }
+      return err
+    }
 
-		// 3. 現在の参加人数を取得
-		var count int64
-		if err := tx.Model(&model.Room{}).Where("room_id = ?", roomID).Count(&count).Error; err != nil {
-			return err
-		}
+    // 2. 既に同じユーザーが参加している場合は削除する
+    if err := tx.Where("room_id = ? AND user_id = ?", roomID, userID).Delete(&model.Room{}).Error; err != nil {
+      return err
+    }
 
-		// 4. 人数制限を確認
-		if count >= 8 {
-			return domain.ErrRoomFull
-		}
+    // 3. 現在の参加人数を取得
+    var count int64
+    if err := tx.Model(&model.Room{}).Where("room_id = ?", roomID).Count(&count).Error; err != nil {
+      return err
+    }
 
-		// 5. 参加者を追加
-		room := model.Room{
-			RoomID:  roomID,
-			UserID:  userID,
-			State:   model.StateSpectator,
-			IsReady: false,
-		}
+    // 4. 人数制限を確認
+    if count >= 8 {
+      return domain.ErrRoomFull
+    }
 
-		if err := tx.Create(&room).Error; err != nil {
-			return err
-		}
+    // 5. 参加者を追加
+    room := model.Room{
+      RoomID:  roomID,
+      UserID:  userID,
+      State:   model.StateSpectator,
+      IsReady: false,
+    }
 
-		// 6. もし試合が始まっているなら、試合が始まっているとエラーを返す（フロント側で観戦処理に移行するため）
-		if roomMatch.IsGaming {
-			return domain.ErrMatchStarted
-		}
-		return nil
-	})
+    if err := tx.Create(&room).Error; err != nil {
+      return err
+    }
+
+    // 同じトランザクション内で、今インサートした自分を含む最新リストを取得
+    if err := tx.Where("room_id = ?", roomID).Find(&rooms).Error; err != nil {
+      return err
+    }
+
+    // 6. もし試合が始まっているなら、試合が始まっているとエラーを返す
+    if roomMatch.IsGaming {
+      return domain.ErrMatchStarted
+    }
+    
+    return nil
+  })
+
+  // トランザクションでエラーが起きた場合はリストを空にしてエラーを返す
+  if err != nil {
+    return nil, err
+  }
+
+  // 正常終了したら、取得した最新リストを返す
+  return rooms, nil
 }
 
 func (r *RoomRepository) LeaveRoom(roomID int32, userID string) error {
