@@ -291,30 +291,33 @@ func (r *RoomRepository) SetReady(ctx context.Context, roomID int32, userID stri
 }
 
 func (r *RoomRepository) UpdateRoomState(ctx context.Context, roomID int32, userID string, state int32, isReady bool) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+  return r.db.Transaction(func(tx *gorm.DB) error {
 
-		// 1. 同IDのRoomMatchをロック
-		var roomLock model.RoomMatch
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
-			return err
-		}
-		result := tx.WithContext(ctx).
-			Model(&model.Room{}).
-			Where("room_id = ? AND user_id = ?", roomID, userID).
-			Updates(map[string]any{
-				"state":    state,
-				"is_ready": isReady,
-			})
+    var roomLock model.RoomMatch
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", roomID).First(&roomLock).Error; err != nil {
+      return err
+    }
 
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return domain.ErrRoomNotFound
-		}
+    // レコードの存在チェックを行う
+    var roomUser model.Room
+    if err := tx.WithContext(ctx).Where("room_id = ? AND user_id = ?", roomID, userID).First(&roomUser).Error; err != nil {
+      if errors.Is(err, gorm.ErrRecordNotFound) {
+        return domain.ErrRoomNotFound // 本当に部屋にいない場合はここで弾く
+      }
+      return err
+    }
 
-		return nil
-	})
+    // 存在することが確定したので、Save または Updates で確実に上書きする
+    roomUser.State = state
+    roomUser.IsReady = isReady
+
+    // Select("*") をつけることで、state=0 や is_ready=false などのゼロ値も強制的にDBに反映させます
+    if err := tx.WithContext(ctx).Select("*").Save(&roomUser).Error; err != nil {
+      return err
+    }
+
+    return nil
+  })
 }
 
 func (r *RoomRepository) StartMatch(ctx context.Context, roomID int32) (string, string, error) {
