@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"io"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,64 +32,74 @@ func NewRoomHandler(repo repo.RoomRepository, battleRepo repo.BattleRepository) 
 }
 
 func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
-	log.Println("[StreamRoom] New connection, waiting for initial Recv...")
-	req, err := stream.Recv()
-	if err != nil {
-		log.Printf("[StreamRoom] Error on initial Recv: %v", err)
-		return err
-	}
+  log.Println("[StreamRoom] New connection, waiting for initial Recv...")
+  req, err := stream.Recv()
+  if err != nil {
+    log.Printf("[StreamRoom] Error on initial Recv: %v", err)
+    return err
+  }
 
-	roomID := req.RoomId
-	log.Printf("[StreamRoom] Client connected to room %d (user: %s)", roomID, req.UserId)
+  roomID := req.RoomId
+  log.Printf("[StreamRoom] Client connected to room %d (user: %s)", roomID, req.UserId)
 
-	roomLobbyStreamsMu.Lock()
-	roomLobbyStreams[roomID] = append(roomLobbyStreams[roomID], stream)
-	log.Printf("[StreamRoom] Room %d now has %d stream(s)", roomID, len(roomLobbyStreams[roomID]))
-	roomLobbyStreamsMu.Unlock()
+  roomLobbyStreamsMu.Lock()
+  roomLobbyStreams[roomID] = append(roomLobbyStreams[roomID], stream)
+  log.Printf("[StreamRoom] Room %d now has %d stream(s)", roomID, len(roomLobbyStreams[roomID]))
+  roomLobbyStreamsMu.Unlock()
 
-	defer func() {
-		roomLobbyStreamsMu.Lock()
-		streams := roomLobbyStreams[roomID]
-		for i, s := range streams {
-			if s == stream {
-				roomLobbyStreams[roomID] = append(streams[:i], streams[i+1:]...)
-				break
-			}
-		}
-		log.Printf("[StreamRoom] Client disconnected from room %d, remaining streams: %d", roomID, len(roomLobbyStreams[roomID]))
-		roomLobbyStreamsMu.Unlock()
-	}()
+  defer func() {
+    roomLobbyStreamsMu.Lock()
+    streams := roomLobbyStreams[roomID]
+    for i, s := range streams {
+      if s == stream {
+        roomLobbyStreams[roomID] = append(streams[:i], streams[i+1:]...)
+        break
+      }
+    }
+    log.Printf("[StreamRoom] Client disconnected from room %d, remaining streams: %d", roomID, len(roomLobbyStreams[roomID]))
+    roomLobbyStreamsMu.Unlock()
+  }()
 
-	// 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
-	// ※ stream.Context() はストリーム固有のコンテキストでDBクエリが失敗するため、context.Background() を使用
-	rooms, listErr := h.repo.ListRoom(context.Background(), roomID)
-	if listErr != nil {
-		log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, listErr)
-	} else {
-		var pbRooms []*pb.Room
-		for _, r := range rooms {
-			pbRooms = append(pbRooms, &pb.Room{
-				RoomId:   r.RoomID,
-				UserId:   r.UserID,
-				State:    r.State,
-				IsReady:  r.IsReady,
-				JoinedAt: r.JoinedAt.Format(time.RFC3339),
-			})
-		}
-		initialResp := &pb.ListRoomResponse{Rooms: pbRooms}
-		log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(initialResp.Rooms))
-		if sendErr := stream.Send(initialResp); sendErr != nil {
-			log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
-		} else {
-			log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
-		}
-	}
+  // 初回接続時のSend（自分の画面用に、現在の最新のルーム情報をすぐに返す）
+  rooms, listErr := h.repo.ListRoom(context.Background(), roomID)
+  if listErr != nil {
+    log.Printf("[StreamRoom] Error on initial ListRoom for room %d: %v", roomID, listErr)
+  } else {
+    var pbRooms []*pb.Room
+    for _, r := range rooms {
+      pbRooms = append(pbRooms, &pb.Room{
+        RoomId:   r.RoomID,
+        UserId:   r.UserID,
+        State:    r.State,
+        IsReady:  r.IsReady,
+        JoinedAt: r.JoinedAt.Format(time.RFC3339),
+      })
+    }
+    initialResp := &pb.ListRoomResponse{Rooms: pbRooms}
+    log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(initialResp.Rooms))
+    if sendErr := stream.Send(initialResp); sendErr != nil {
+      log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
+    } else {
+      log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
+    }
+  }
 
-	// クライアントから切断されるまで無限待機
-	<-stream.Context().Done()
+  // Recvによる正常な双方向ストリームの維持ループに
+  for {
+    // クライアント側からの追加メッセージ、または通信切断（EOF/エラー）を監視し続ける
+    _, recvErr := stream.Recv()
+    if recvErr != nil {
+      if errors.Is(recvErr, io.EOF) {
+        log.Printf("[StreamRoom] Client closed stream gracefully for room %d", roomID)
+      } else {
+        log.Printf("[StreamRoom] Connection closed with error for room %d: %v", roomID, recvErr)
+      }
+      break // ループを抜けて defer 処理（切断処理）へ
+    }
+  }
 
-	log.Printf("[StreamRoom] Context.Done() reached for room %d", roomID)
-	return nil
+  log.Printf("[StreamRoom] Thread finished safely for room %d", roomID)
+  return nil
 }
 
 func (h *RoomHandler) broadcastToRoom(roomID int32, response *pb.ListRoomResponse) {
