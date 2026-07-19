@@ -75,12 +75,23 @@ func (h *RoomHandler) StreamRoom(stream pb.RoomService_StreamRoomServer) error {
         JoinedAt: r.JoinedAt.Format(time.RFC3339),
       })
     }
-    initialResp := &pb.ListRoomResponse{Rooms: pbRooms}
+		initialResp := &pb.ListRoomResponse{Rooms: pbRooms}
     log.Printf("[StreamRoom] Sending initial response to room %d (rooms count: %d)", roomID, len(initialResp.Rooms))
+    
     if sendErr := stream.Send(initialResp); sendErr != nil {
       log.Printf("[StreamRoom] Error on initial Send for room %d: %v", roomID, sendErr)
     } else {
       log.Printf("[StreamRoom] Initial Send succeeded for room %d", roomID)
+      
+      // gRPC-Web や HTTP/2 のバッファリングを強制解除して即座にUnityに届ける
+      // stream (grpc.ServerStream) の下層にある HTTP レスポンスライターから Flush を呼び出す
+      if _, ok := stream.(interface{ Context() context.Context }); ok {
+        // gRPC-WebのラッパーやGoのHTTPサーバーによっては、標準のFlusherがインジェクションされています
+        if w, ok := stream.(interface{ Flush() }); ok {
+            w.Flush()
+            log.Println("[StreamRoom] Explicit Flush executed via stream interface")
+        }
+      }
     }
   }
 
