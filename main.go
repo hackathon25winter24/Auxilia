@@ -117,6 +117,8 @@ func main() {
 	wrappedGrpc := grpcweb.WrapServer(
 		s,
 		grpcweb.WithOriginFunc(func(origin string) bool { return true }), // 全てのアクセス元のCORSを許可
+		grpcweb.WithWebsockets(true),
+    grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool { return true }),//flashを許可
 	)
 
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
