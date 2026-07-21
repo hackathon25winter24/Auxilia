@@ -7,6 +7,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"log"
 
 	"auxilia/domain"
 	"auxilia/domain/model"
@@ -139,11 +140,18 @@ func (r *BattleRepository) ApplyMove(roomID uint32, playerID string, characterUn
 		if gameData.Is1PTurn { expectedPlayerID = gameData.Player1ID }
 		if playerID != expectedPlayerID { return domain.ErrInvalidTurn }
 
-		var character model.UniqueCharacter
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND room_id = ?", characterUniqueID, roomID).First(&character).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) { return domain.ErrCharacterNotFound }
-			return err
-		}
+		characterID := GetCharacterIDFromUCID(characterUniqueID)
+
+    var character model.UniqueCharacter
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+        Where("room_id = ? AND character_id = ? AND is_1p = ?", roomID, characterID, gameData.Is1PTurn).
+        First(&character).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) { 
+            log.Printf("[ApplyMove] Character not found: RoomID=%d, CharacterID=%d, Is1P=%v", roomID, characterID, gameData.Is1PTurn)
+            return domain.ErrCharacterNotFound 
+        }
+        return err
+    }
 
 		if character.HP == 0 || character.Is1P != gameData.Is1PTurn { return domain.ErrForbiddenAction }
 

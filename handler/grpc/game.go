@@ -238,7 +238,7 @@ func (h *BattleHandler) ApplyMove(ctx context.Context, req *pb.MoveAction) (*pb.
 	}
 
 	return &pb.AcceptResponse{Success: true, Message: "move applied successfully"}, nil
-} // 💡 閉じ括弧を修正
+} 
 
 func (h *BattleHandler) ApplyAttack(ctx context.Context, req *pb.AttackAction) (*pb.AcceptResponse, error) {
 	if req.AttackerCharacterId == 0 {
