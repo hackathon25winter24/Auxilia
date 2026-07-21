@@ -149,7 +149,7 @@ func convertToResponse(m *model.GameData) *pb.GameDataResponse {
 			ToX:                      uint32(m.CurrentAction.ToX),
 			ToY:                      uint32(m.CurrentAction.ToY),
 			AttackType:               int32(m.CurrentAction.AttackType),
-			TargetCharacterUniqueIds: targetIDs,
+			TargetCharacterIds:       m.CurrentAction.TargetCharacterIDs,
 		}
 	}
 
@@ -317,15 +317,15 @@ func (h *BattleHandler) FetchActionLog(ctx context.Context, req *pb.FetchActionL
 		return nil, status.Errorf(codes.NotFound, "action log not found: %v", err)
 	}
 
-	var targetIDs []uint32
-	if logData.TargetCharacterIDs != "" {
-		parts := strings.Split(logData.TargetCharacterIDs, ",")
-		for _, p := range parts {
-			if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil {
-				targetIDs = append(targetIDs, uint32(id))
-			}
-		}
-	}
+	// var targetIDs []uint32
+	// if logData.TargetCharacterIDs != "" {
+	// 	parts := strings.Split(logData.TargetCharacterIDs, ",")
+	// 	for _, p := range parts {
+	// 		if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil {
+	// 			targetIDs = append(targetIDs, uint32(id))
+	// 		}
+	// 	}
+	// }
 
 	return &pb.GameActionLog{
 		Id:                       uint32(logData.ID),
@@ -337,7 +337,7 @@ func (h *BattleHandler) FetchActionLog(ctx context.Context, req *pb.FetchActionL
 		ToX:                      uint32(logData.ToX),
 		ToY:                      uint32(logData.ToY),
 		AttackType:               int32(logData.AttackType),
-		TargetCharacterUniqueIds: targetIDs,
+		TargetCharacterIds: logData.TargetCharacterIDs,
 	}, nil
 }
 

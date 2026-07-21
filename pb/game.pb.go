@@ -1056,14 +1056,18 @@ type GameActionLog struct {
 	PlayerId               string                 `protobuf:"bytes,4,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`                                                // 行動したプレイヤーID
 	ActionType             string                 `protobuf:"bytes,5,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty"`                                          // "MOVE" または "ATTACK"
 	ActorCharacterUniqueId uint32                 `protobuf:"varint,6,opt,name=actor_character_unique_id,json=actorCharacterUniqueId,proto3" json:"actor_character_unique_id,omitempty"` // 行動したキャラのID
-	// （action_type == "MOVE" の時のみ使用）
+	// 移動用 (action_type == "MOVE")
 	ToX uint32 `protobuf:"varint,7,opt,name=to_x,json=toX,proto3" json:"to_x,omitempty"`
 	ToY uint32 `protobuf:"varint,8,opt,name=to_y,json=toY,proto3" json:"to_y,omitempty"`
-	// （action_type == "ATTACK" の時のみ使用）
-	AttackType               int32    `protobuf:"varint,9,opt,name=attack_type,json=attackType,proto3" json:"attack_type,omitempty"`
-	TargetCharacterUniqueIds []uint32 `protobuf:"varint,10,rep,packed,name=target_character_unique_ids,json=targetCharacterUniqueIds,proto3" json:"target_character_unique_ids,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// 攻撃用 (action_type == "ATTACK")
+	AttackType         int32  `protobuf:"varint,9,opt,name=attack_type,json=attackType,proto3" json:"attack_type,omitempty"`
+	TargetCharacterIds string `protobuf:"bytes,10,opt,name=target_character_ids,json=targetCharacterIds,proto3" json:"target_character_ids,omitempty"`
+	DamageLog          string `protobuf:"bytes,11,opt,name=damage_log,json=damageLog,proto3" json:"damage_log,omitempty"` // ダメージログ
+	// 特殊効果用 (action_type == "EFFECT")
+	EffectType    int32  `protobuf:"varint,12,opt,name=effect_type,json=effectType,proto3" json:"effect_type,omitempty"` // 特殊効果タイプ
+	NewHp         uint32 `protobuf:"varint,13,opt,name=new_hp,json=newHp,proto3" json:"new_hp,omitempty"`                // 変更後のHP
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GameActionLog) Reset() {
@@ -1159,11 +1163,32 @@ func (x *GameActionLog) GetAttackType() int32 {
 	return 0
 }
 
-func (x *GameActionLog) GetTargetCharacterUniqueIds() []uint32 {
+func (x *GameActionLog) GetTargetCharacterIds() string {
 	if x != nil {
-		return x.TargetCharacterUniqueIds
+		return x.TargetCharacterIds
 	}
-	return nil
+	return ""
+}
+
+func (x *GameActionLog) GetDamageLog() string {
+	if x != nil {
+		return x.DamageLog
+	}
+	return ""
+}
+
+func (x *GameActionLog) GetEffectType() int32 {
+	if x != nil {
+		return x.EffectType
+	}
+	return 0
+}
+
+func (x *GameActionLog) GetNewHp() uint32 {
+	if x != nil {
+		return x.NewHp
+	}
+	return 0
 }
 
 type ApplyEffectRequest struct {
@@ -1502,7 +1527,7 @@ const file_game_proto_rawDesc = "" +
 	"\x15registered_characters\x18\x01 \x03(\v2\x1d.game.network.UniqueCharacterR\x14registeredCharacters\"L\n" +
 	"\x15FetchActionLogRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1a\n" +
-	"\bsequence\x18\x02 \x01(\rR\bsequence\"\xd3\x02\n" +
+	"\bsequence\x18\x02 \x01(\rR\bsequence\"\x9d\x03\n" +
 	"\rGameActionLog\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
 	"\aroom_id\x18\x02 \x01(\rR\x06roomId\x12\x1a\n" +
@@ -1514,9 +1539,14 @@ const file_game_proto_rawDesc = "" +
 	"\x04to_x\x18\a \x01(\rR\x03toX\x12\x11\n" +
 	"\x04to_y\x18\b \x01(\rR\x03toY\x12\x1f\n" +
 	"\vattack_type\x18\t \x01(\x05R\n" +
-	"attackType\x12=\n" +
-	"\x1btarget_character_unique_ids\x18\n" +
-	" \x03(\rR\x18targetCharacterUniqueIds\"\xa5\x01\n" +
+	"attackType\x120\n" +
+	"\x14target_character_ids\x18\n" +
+	" \x01(\tR\x12targetCharacterIds\x12\x1d\n" +
+	"\n" +
+	"damage_log\x18\v \x01(\tR\tdamageLog\x12\x1f\n" +
+	"\veffect_type\x18\f \x01(\x05R\n" +
+	"effectType\x12\x15\n" +
+	"\x06new_hp\x18\r \x01(\rR\x05newHp\"\xa5\x01\n" +
 	"\x12ApplyEffectRequest\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12\x1b\n" +
 	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12!\n" +

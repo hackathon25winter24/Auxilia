@@ -87,7 +87,7 @@ type GameActionLog struct {
 	PlayerID  string // 誰が実行したか
 	DamageLog string // ダメージログ
 
-	ActionType             string // "MOVE" または "ATTACK"
+	ActionType             string // "MOVE,ATTACK,EFFECT"
 	ActorCharacterUniqueID uint   // 行動したキャラのID
 	
 	// 移動用
@@ -96,7 +96,7 @@ type GameActionLog struct {
 
 	// 攻撃用
 	AttackType         int
-	TargetCharacterIDs string // "3,5,6" のようなカンマ区切り文字列
+	TargetCharacterIDs string 
 
 	//特殊効果用
 	EffectType         int    `gorm:"column:effect_type"`

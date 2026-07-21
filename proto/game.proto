@@ -141,20 +141,24 @@ message FetchActionLogRequest {
 message GameActionLog {
   uint32 id = 1;
   uint32 room_id = 2;
-  uint32 sequence = 3;       // 通し番号（1, 2, 3...）
-  string player_id = 4;      // 行動したプレイヤーID
-  string action_type = 5;    // "MOVE" または "ATTACK"
+  uint32 sequence = 3;                    // 通し番号（1, 2, 3...）
+  string player_id = 4;                   // 行動したプレイヤーID
+  string action_type = 5;                 // "MOVE" または "ATTACK"
 
-  uint32 actor_character_unique_id = 6; // 行動したキャラのID
+  uint32 actor_character_unique_id = 6;    // 行動したキャラのID
 
-  //（action_type == "MOVE" の時のみ使用）
+  // 移動用 (action_type == "MOVE")
   uint32 to_x = 7;
   uint32 to_y = 8;
 
-  //（action_type == "ATTACK" の時のみ使用）
+  // 攻撃用 (action_type == "ATTACK")
   int32 attack_type = 9;
+  string target_character_ids = 10;
+  string damage_log = 11;                 // ダメージログ
 
-  repeated uint32 target_character_unique_ids = 10; 
+  // 特殊効果用 (action_type == "EFFECT")
+  int32 effect_type = 12;                 // 特殊効果タイプ
+  uint32 new_hp = 13;                     // 変更後のHP
 }
 
 message ApplyEffectRequest {
