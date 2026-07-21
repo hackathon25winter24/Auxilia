@@ -27,6 +27,13 @@ func NewBattleRepository(db *gorm.DB) *BattleRepository {
 // CreateGame: 試合情報の初期登録
 func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.GameData, error) {
 	now := time.Now()
+
+	grids := make([]model.Grid, len(model.DefaultMap))
+	for i, g := range model.DefaultMap {
+		g.RoomID = uint(roomID) 
+		grids[i] = g
+	}
+
 	gameData := &model.GameData{
 		RoomID:      uint(roomID),
 		Player1ID:   p1ID,
@@ -38,20 +45,9 @@ func (r *BattleRepository) CreateGame(roomID uint32, p1ID, p2ID string) (*model.
 		Turn:        1,
 		Is1PTurn:    true,
 		TurnStartAt: now,
-		IsTurnEnded: false, // 💡 初期状態はfalse
+		IsTurnEnded: false,
+		Grids:       grids,
 	}
-
-	var grids []model.Grid
-	for x := uint(0); x < 8; x++ {
-		for y := uint(0); y < 5; y++ {
-			grids = append(grids, model.Grid{
-				PositionX: x,
-				PositionY: y,
-				GridType:  0,
-			})
-		}
-	}
-	gameData.Grids = grids
 
 	if err := r.db.Create(gameData).Error; err != nil {
 		return nil, err

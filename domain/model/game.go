@@ -104,22 +104,6 @@ type GameActionLog struct {
 }
 
 
-//Default values for game initialization
-var DefaultPoints1P = []Position{
-	{X: 0, Y: 0},
-	{X: 1, Y: 2},
-	{X: 0, Y: 4},
-}
-
-var DefaultPoints2P = []Position{
-	{X: 7, Y: 0},
-	{X: 6, Y: 2},
-	{X: 7, Y: 4},
-}
-
-var DefaultBaseHP = uint(200)
-var DefaultCost = uint(50)
-
 var DefaultCharacterHPs = map[uint]int{
 	0: 150,
 	1: 300,
