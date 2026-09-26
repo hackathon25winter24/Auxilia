@@ -1,5 +1,7 @@
 # 戦闘サーバー V2
 
+要求・応答フィールド、呼び出し条件、エラーの一覧は [V2 APIリファレンス](battle-v2-api.md) を参照。
+
 ## 実装と移植元
 
 Auxilia-webserver の `internal/game` を `domain/gamev2` に移植した。
