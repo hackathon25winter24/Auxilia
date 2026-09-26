@@ -1,0 +1,10 @@
+syntax = "proto3";
+package game.network.v2;
+option go_package = "auxilia/pb/v2;pbv2";
+option csharp_namespace = "Game.Network.V2";
+import "room_match.proto";
+service RoomMatchServiceV2 {
+ rpc CreateRoomMatch(roommatch.CreateRoomMatchRequest) returns(roommatch.RoomMatchResponse);
+ rpc ListRoomMatch(roommatch.ListRoomMatchRequest) returns(roommatch.ListRoomMatchResponse);
+ rpc UpdateRoomMatch(roommatch.UpdateRoomMatchRequest) returns(roommatch.RoomMatchResponse);
+}

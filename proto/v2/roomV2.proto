@@ -1,0 +1,25 @@
+syntax = "proto3";
+package game.network.v2;
+option go_package = "auxilia/pb/v2;pbv2";
+option csharp_namespace = "Game.Network.V2";
+import "room.proto";
+service RoomServiceV2 {
+    rpc JoinRoom (room.JoinRoomRequest) returns (room.JoinRoomResponse);
+
+    rpc LeaveRoom (room.LeaveRoomRequest) returns (room.LeaveRoomResponse);
+
+    rpc ListRoom (room.ListRoomRequest) returns (room.ListRoomResponse);
+
+    rpc EnterRing (room.EnterRingRequest) returns (room.EnterRingResponse);
+
+    rpc LeaveRing (room.LeaveRingRequest) returns (room.LeaveRingResponse);
+
+    rpc SetReady (room.SetReadyRequest) returns (room.SetReadyResponse);
+
+    rpc UpdateRoomState (room.UpdateRoomStateRequest) returns (room.UpdateRoomStateResponse);
+
+    rpc StartMatch (room.StartMatchRequest) returns (room.StartMatchResponse);
+
+    // ルーム内のリアルタイム同期（入室時のStream接続用）
+    rpc StreamRoom (stream room.RoomStreamRequest) returns (stream room.ListRoomResponse);
+}

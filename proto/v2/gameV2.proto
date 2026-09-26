@@ -1,0 +1,75 @@
+syntax = "proto3";
+package game.network.v2;
+option go_package = "auxilia/pb/v2;pbv2";
+option csharp_namespace = "Game.Network.V2";
+
+// Send authorization: Bearer <token> as gRPC metadata after Login.
+service BattleServiceV2 {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc GetDefinitions(Empty) returns (DefinitionsResponse);
+  rpc CreateGame(CreateGameRequest) returns (Snapshot);
+  rpc GetRoomGame(CreateGameRequest) returns (Snapshot);
+  rpc RegisterCharacters(SelectionRequest) returns (Snapshot);
+  rpc Ready(GameRequest) returns (Snapshot);
+  rpc CancelGame(GameRequest) returns (Snapshot);
+  rpc GetGameData(GameRequest) returns (Snapshot);
+  rpc StreamGame(GameRequest) returns (stream Snapshot);
+  rpc ApplyMove(ActionRequest) returns (Snapshot);
+  rpc ApplyAttack(ActionRequest) returns (Snapshot);
+  rpc EndTurn(ActionRequest) returns (Snapshot);
+  rpc Surrender(ActionRequest) returns (Snapshot);
+  rpc FetchActionLog(LogRequest) returns (LogResponse);
+}
+message Empty {}
+message LoginRequest { string name = 1; string password = 2; }
+message LoginResponse { string token = 1; string player_id = 2; string expires_at = 3; }
+message DefinitionsResponse { string definitions_json = 1; string rules_version = 2; }
+message CreateGameRequest { uint32 room_id = 1; }
+message GameRequest { string match_id = 1; }
+message SelectionRequest { string match_id = 1; repeated string definition_ids = 2; }
+message ActionRequest {
+  string match_id = 1;
+  string command_id = 2;
+  uint64 expected_revision = 3;
+  string character_id = 4;
+  int32 attack_index = 5;
+  Position target = 6;
+  Position direction = 7;
+}
+message Position { int32 x = 1; int32 y = 2; }
+message Player { string id = 1; string name = 2; int32 cost = 3; }
+message Base { string owner_id = 1; int32 hp = 2 [json_name="hp"]; int32 max_hp = 3 [json_name="maxHP"]; Position position = 4; }
+message Character {
+  string id = 1; string definition_id = 2; string owner_id = 3; string name = 4;
+  int32 hp = 5; int32 max_hp = 6 [json_name="maxHP"]; Position position = 7;
+  repeated string effects = 8; bool revive_used = 9; bool departure_used = 10;
+  int32 drank_turn = 11; int32 hangover_turn = 12; int32 hangover_until = 13;
+  map<string,int32> used_skills = 14; bool combat_stance = 15; int32 barrier_turn = 16;
+  bool wriggling = 17; repeated string temporary_buffs = 18;
+}
+message TileEffect { Position position = 1; string type = 2; string owner_id = 3; int32 hp = 4; }
+message Event { uint64 sequence = 1; string type = 2; string text = 3; }
+message State {
+  string match_id = 1; uint64 revision = 2; bool started = 3;
+  repeated string ready_player_ids = 4; repeated Player players = 5;
+  repeated Base bases = 6; repeated Character characters = 7;
+  repeated TileEffect tile_effects = 8; repeated Position blocked_cells = 9;
+  string turn_player_id = 10; int32 turn = 11; string phase = 12;
+  string phase_deadline = 13; string turn_deadline = 14; string server_time = 15;
+  string winner_id = 16; bool finished = 17; Event last_event = 18;
+  repeated Event events = 19; string test_owner_id = 20;
+}
+message Snapshot {
+  uint32 room_id = 1; State state = 2; uint64 last_log_sequence = 3;
+  repeated string selected_player_ids = 4;
+  int32 p1_rate = 5; int32 p2_rate = 6; int32 p1_rate_delta = 7; int32 p2_rate_delta = 8;
+  string rules_version = 9;
+}
+// Each durable transition has full before/after state for exact animation/recovery.
+// This sequence is independent of State.revision (one action may emit several events).
+message ActionLog {
+  uint64 sequence = 1; string player_id = 2; string action_type = 3;
+  ActionRequest command = 4; State before = 5; State after = 6;
+}
+message LogRequest { string match_id = 1; uint64 after_sequence = 2; uint32 limit = 3; }
+message LogResponse { repeated ActionLog logs = 1; uint64 next_sequence = 2; }

@@ -1,6 +1,10 @@
 package main
 
 import (
+	handlerv2 "auxilia/handler/grpcv2"
+	gormv2 "auxilia/infrastructure/gormv2"
+
+	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -14,7 +18,7 @@ import (
 
 	cfgpkg "auxilia/config"
 	"auxilia/domain/model" // 追加
-	handlergrpc "auxilia/handler/grpc"
+
 	httpserver "auxilia/handler/http"
 	gorm "auxilia/infrastructure/gorm"
 	"auxilia/pb"
@@ -80,34 +84,24 @@ func main() {
 	// gRPCサーバーの作成
 	s := grpc.NewServer()
 
-	// Userサービスの設定
-	userRepo := gorm.NewUserRepository(db)
-	userHandler := handlergrpc.NewUserHandler(userRepo)
-	pb.RegisterUserServiceServer(s, userHandler)
-
-	// RoomMatchサービスの設定を追加
-	roomMatchRepo := gorm.NewRoomMatchRepository(db)
-	roomMatchHandler := handlergrpc.NewRoomMatchServer(roomMatchRepo)
-	pb.RegisterRoomMatchServiceServer(s, roomMatchHandler)
-
-	// Gameサービスの設定を追加
-	gameRepo := gorm.NewBattleRepository(db)
-	gameHandler := handlergrpc.NewBattleHandler(gameRepo)
-	pb.RegisterBattleServiceServer(s, gameHandler)
-
-	// Roomサービスの設定を追加
+	// Legacy battle/lobby implementations remain on disk, but are not registered.
+	battleStoreV2 := gormv2.New(db)
+	if err := battleStoreV2.Migrate(); err != nil {
+		log.Fatalf("V2 migration failed: %v", err)
+	}
+	battleHandlerV2 := handlerv2.Register(s, battleStoreV2)
+	pb.RegisterUserServiceServer(s, handlerv2.NewUserGuard(battleHandlerV2))
+	go battleHandlerV2.Run(context.Background())
 	roomRepo := gorm.NewRoomRepository(db)
-	roomHandler := handlergrpc.NewRoomHandler(roomRepo, gameRepo)
-	pb.RegisterRoomServiceServer(s, roomHandler)
 
 	reflection.Register(s)
 
 	go func() {
-			ticker := time.NewTicker(1 * time.Minute) // 1分おきにチェック
-			for range ticker.C {
-					// 3分以上動きがない（joined_atが古い）待機ユーザーを削除
-					roomRepo.TimeoutLeavers(180) 
-			}
+		ticker := time.NewTicker(1 * time.Minute) // 1分おきにチェック
+		for range ticker.C {
+			// 3分以上動きがない（joined_atが古い）待機ユーザーを削除
+			roomRepo.TimeoutLeavers(180)
+		}
 	}()
 
 	// --- 以下、既存のハイブリッドサーバー設定（変更なし） ---
@@ -118,12 +112,12 @@ func main() {
 		s,
 		grpcweb.WithOriginFunc(func(origin string) bool { return true }), // 全てのアクセス元のCORSを許可
 		grpcweb.WithWebsockets(true),
-    grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool { return true }),//flashを許可
+		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool { return true }), //flashを許可
 	)
 
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Unityからの通信（gRPC-Web特有の通信）ならラッパーに処理させる
-		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) {
+		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) || wrappedGrpc.IsGrpcWebSocketRequest(r) {
 			wrappedGrpc.ServeHTTP(w, r)
 			return
 		}
@@ -134,7 +128,7 @@ func main() {
 			s.ServeHTTP(w, r)
 			return
 		}
-		
+
 		httpHandler.ServeHTTP(w, r)
 	})
 
@@ -149,4 +143,3 @@ func main() {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
-
