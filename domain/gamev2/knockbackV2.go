@@ -1,6 +1,7 @@
 package game
 
 func (s *State) pushBack(actor, target int, direction Position) {
+	defer s.presentationScope("KNOCKBACK", actor)()
 	if abs(direction.X)+abs(direction.Y) != 1 {
 		direction = Position{1, 0}
 		if s.Characters[actor].OwnerID == s.Players[1].ID {
@@ -17,6 +18,7 @@ func (s *State) pushBack(actor, target int, direction Position) {
 			continue
 		}
 		c.Position = p
+		s.observePresentation()
 		s.triggerTile(target)
 		return
 	}

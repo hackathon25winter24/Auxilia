@@ -1148,8 +1148,11 @@ type Snapshot struct {
 	P1RateDelta       int32                  `protobuf:"varint,7,opt,name=p1_rate_delta,json=p1RateDelta,proto3" json:"p1_rate_delta,omitempty"`
 	P2RateDelta       int32                  `protobuf:"varint,8,opt,name=p2_rate_delta,json=p2RateDelta,proto3" json:"p2_rate_delta,omitempty"`
 	RulesVersion      string                 `protobuf:"bytes,9,opt,name=rules_version,json=rulesVersion,proto3" json:"rules_version,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Inclusive, bounded replay window. Dedupe by match_id/sequence/event index.
+	PresentationBatches      []*PresentationBatch `protobuf:"bytes,10,rep,name=presentation_batches,json=presentationBatches,proto3" json:"presentation_batches,omitempty"`
+	PresentationFromSequence uint64               `protobuf:"varint,11,opt,name=presentation_from_sequence,json=presentationFromSequence,proto3" json:"presentation_from_sequence,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Snapshot) Reset() {
@@ -1245,16 +1248,32 @@ func (x *Snapshot) GetRulesVersion() string {
 	return ""
 }
 
+func (x *Snapshot) GetPresentationBatches() []*PresentationBatch {
+	if x != nil {
+		return x.PresentationBatches
+	}
+	return nil
+}
+
+func (x *Snapshot) GetPresentationFromSequence() uint64 {
+	if x != nil {
+		return x.PresentationFromSequence
+	}
+	return 0
+}
+
 // Each durable transition has full before/after state for exact animation/recovery.
 // This sequence is independent of State.revision (one action may emit several events).
 type ActionLog struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	PlayerId      string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
-	ActionType    string                 `protobuf:"bytes,3,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty"`
-	Command       *ActionRequest         `protobuf:"bytes,4,opt,name=command,proto3" json:"command,omitempty"`
-	Before        *State                 `protobuf:"bytes,5,opt,name=before,proto3" json:"before,omitempty"`
-	After         *State                 `protobuf:"bytes,6,opt,name=after,proto3" json:"after,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Sequence   uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	PlayerId   string                 `protobuf:"bytes,2,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	ActionType string                 `protobuf:"bytes,3,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty"`
+	Command    *ActionRequest         `protobuf:"bytes,4,opt,name=command,proto3" json:"command,omitempty"`
+	Before     *State                 `protobuf:"bytes,5,opt,name=before,proto3" json:"before,omitempty"`
+	After      *State                 `protobuf:"bytes,6,opt,name=after,proto3" json:"after,omitempty"`
+	// Absent for rows written before presentation events were introduced.
+	Presentation  *PresentationBatch `protobuf:"bytes,7,opt,name=presentation,proto3" json:"presentation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1327,6 +1346,13 @@ func (x *ActionLog) GetBefore() *State {
 func (x *ActionLog) GetAfter() *State {
 	if x != nil {
 		return x.After
+	}
+	return nil
+}
+
+func (x *ActionLog) GetPresentation() *PresentationBatch {
+	if x != nil {
+		return x.Presentation
 	}
 	return nil
 }
@@ -1443,6 +1469,302 @@ func (x *LogResponse) GetNextSequence() uint64 {
 	return 0
 }
 
+type PresentationBatch struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Version        uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Sequence       uint64                 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	BeforeRevision uint64                 `protobuf:"varint,3,opt,name=before_revision,json=beforeRevision,proto3" json:"before_revision,omitempty"`
+	AfterRevision  uint64                 `protobuf:"varint,4,opt,name=after_revision,json=afterRevision,proto3" json:"after_revision,omitempty"`
+	CommandId      string                 `protobuf:"bytes,5,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
+	ActionType     string                 `protobuf:"bytes,6,opt,name=action_type,json=actionType,proto3" json:"action_type,omitempty"`
+	Events         []*PresentationEvent   `protobuf:"bytes,7,rep,name=events,proto3" json:"events,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PresentationBatch) Reset() {
+	*x = PresentationBatch{}
+	mi := &file_v2_gameV2_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PresentationBatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PresentationBatch) ProtoMessage() {}
+
+func (x *PresentationBatch) ProtoReflect() protoreflect.Message {
+	mi := &file_v2_gameV2_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PresentationBatch.ProtoReflect.Descriptor instead.
+func (*PresentationBatch) Descriptor() ([]byte, []int) {
+	return file_v2_gameV2_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *PresentationBatch) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *PresentationBatch) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *PresentationBatch) GetBeforeRevision() uint64 {
+	if x != nil {
+		return x.BeforeRevision
+	}
+	return 0
+}
+
+func (x *PresentationBatch) GetAfterRevision() uint64 {
+	if x != nil {
+		return x.AfterRevision
+	}
+	return 0
+}
+
+func (x *PresentationBatch) GetCommandId() string {
+	if x != nil {
+		return x.CommandId
+	}
+	return ""
+}
+
+func (x *PresentationBatch) GetActionType() string {
+	if x != nil {
+		return x.ActionType
+	}
+	return ""
+}
+
+func (x *PresentationBatch) GetEvents() []*PresentationEvent {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+type PresentationEvent struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Index             uint32                 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Type              string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Cause             string                 `protobuf:"bytes,3,opt,name=cause,proto3" json:"cause,omitempty"`
+	SourceCharacterId string                 `protobuf:"bytes,4,opt,name=source_character_id,json=sourceCharacterId,proto3" json:"source_character_id,omitempty"`
+	SourcePlayerId    string                 `protobuf:"bytes,5,opt,name=source_player_id,json=sourcePlayerId,proto3" json:"source_player_id,omitempty"`
+	TargetKind        string                 `protobuf:"bytes,6,opt,name=target_kind,json=targetKind,proto3" json:"target_kind,omitempty"`
+	TargetId          string                 `protobuf:"bytes,7,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	DefinitionId      string                 `protobuf:"bytes,8,opt,name=definition_id,json=definitionId,proto3" json:"definition_id,omitempty"`
+	SkillKey          string                 `protobuf:"bytes,9,opt,name=skill_key,json=skillKey,proto3" json:"skill_key,omitempty"`
+	SkillName         string                 `protobuf:"bytes,10,opt,name=skill_name,json=skillName,proto3" json:"skill_name,omitempty"`
+	AttackIndex       int32                  `protobuf:"varint,11,opt,name=attack_index,json=attackIndex,proto3" json:"attack_index,omitempty"`
+	Amount            int32                  `protobuf:"varint,12,opt,name=amount,proto3" json:"amount,omitempty"`
+	BeforeValue       int32                  `protobuf:"varint,13,opt,name=before_value,json=beforeValue,proto3" json:"before_value,omitempty"`
+	AfterValue        int32                  `protobuf:"varint,14,opt,name=after_value,json=afterValue,proto3" json:"after_value,omitempty"`
+	Effect            string                 `protobuf:"bytes,15,opt,name=effect,proto3" json:"effect,omitempty"`
+	Property          string                 `protobuf:"bytes,16,opt,name=property,proto3" json:"property,omitempty"`
+	BeforeText        string                 `protobuf:"bytes,17,opt,name=before_text,json=beforeText,proto3" json:"before_text,omitempty"`
+	AfterText         string                 `protobuf:"bytes,18,opt,name=after_text,json=afterText,proto3" json:"after_text,omitempty"`
+	From              *Position              `protobuf:"bytes,19,opt,name=from,proto3" json:"from,omitempty"`
+	To                *Position              `protobuf:"bytes,20,opt,name=to,proto3" json:"to,omitempty"`
+	Direction         *Position              `protobuf:"bytes,21,opt,name=direction,proto3" json:"direction,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *PresentationEvent) Reset() {
+	*x = PresentationEvent{}
+	mi := &file_v2_gameV2_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PresentationEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PresentationEvent) ProtoMessage() {}
+
+func (x *PresentationEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_v2_gameV2_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PresentationEvent.ProtoReflect.Descriptor instead.
+func (*PresentationEvent) Descriptor() ([]byte, []int) {
+	return file_v2_gameV2_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *PresentationEvent) GetIndex() uint32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *PresentationEvent) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetCause() string {
+	if x != nil {
+		return x.Cause
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetSourceCharacterId() string {
+	if x != nil {
+		return x.SourceCharacterId
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetSourcePlayerId() string {
+	if x != nil {
+		return x.SourcePlayerId
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetTargetKind() string {
+	if x != nil {
+		return x.TargetKind
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetDefinitionId() string {
+	if x != nil {
+		return x.DefinitionId
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetSkillKey() string {
+	if x != nil {
+		return x.SkillKey
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetSkillName() string {
+	if x != nil {
+		return x.SkillName
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetAttackIndex() int32 {
+	if x != nil {
+		return x.AttackIndex
+	}
+	return 0
+}
+
+func (x *PresentationEvent) GetAmount() int32 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PresentationEvent) GetBeforeValue() int32 {
+	if x != nil {
+		return x.BeforeValue
+	}
+	return 0
+}
+
+func (x *PresentationEvent) GetAfterValue() int32 {
+	if x != nil {
+		return x.AfterValue
+	}
+	return 0
+}
+
+func (x *PresentationEvent) GetEffect() string {
+	if x != nil {
+		return x.Effect
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetProperty() string {
+	if x != nil {
+		return x.Property
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetBeforeText() string {
+	if x != nil {
+		return x.BeforeText
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetAfterText() string {
+	if x != nil {
+		return x.AfterText
+	}
+	return ""
+}
+
+func (x *PresentationEvent) GetFrom() *Position {
+	if x != nil {
+		return x.From
+	}
+	return nil
+}
+
+func (x *PresentationEvent) GetTo() *Position {
+	if x != nil {
+		return x.To
+	}
+	return nil
+}
+
+func (x *PresentationEvent) GetDirection() *Position {
+	if x != nil {
+		return x.Direction
+	}
+	return nil
+}
+
 var File_v2_gameV2_proto protoreflect.FileDescriptor
 
 const file_v2_gameV2_proto_rawDesc = "" +
@@ -1549,7 +1871,7 @@ const file_v2_gameV2_proto_rawDesc = "" +
 	"\n" +
 	"last_event\x18\x12 \x01(\v2\x16.game.network.v2.EventR\tlastEvent\x12.\n" +
 	"\x06events\x18\x13 \x03(\v2\x16.game.network.v2.EventR\x06events\x12\"\n" +
-	"\rtest_owner_id\x18\x14 \x01(\tR\vtestOwnerId\"\xcc\x02\n" +
+	"\rtest_owner_id\x18\x14 \x01(\tR\vtestOwnerId\"\xe1\x03\n" +
 	"\bSnapshot\x12\x17\n" +
 	"\aroom_id\x18\x01 \x01(\rR\x06roomId\x12,\n" +
 	"\x05state\x18\x02 \x01(\v2\x16.game.network.v2.StateR\x05state\x12*\n" +
@@ -1559,7 +1881,10 @@ const file_v2_gameV2_proto_rawDesc = "" +
 	"\ap2_rate\x18\x06 \x01(\x05R\x06p2Rate\x12\"\n" +
 	"\rp1_rate_delta\x18\a \x01(\x05R\vp1RateDelta\x12\"\n" +
 	"\rp2_rate_delta\x18\b \x01(\x05R\vp2RateDelta\x12#\n" +
-	"\rrules_version\x18\t \x01(\tR\frulesVersion\"\xfd\x01\n" +
+	"\rrules_version\x18\t \x01(\tR\frulesVersion\x12U\n" +
+	"\x14presentation_batches\x18\n" +
+	" \x03(\v2\".game.network.v2.PresentationBatchR\x13presentationBatches\x12<\n" +
+	"\x1apresentation_from_sequence\x18\v \x01(\x04R\x18presentationFromSequence\"\xc5\x02\n" +
 	"\tActionLog\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12\x1b\n" +
 	"\tplayer_id\x18\x02 \x01(\tR\bplayerId\x12\x1f\n" +
@@ -1567,7 +1892,8 @@ const file_v2_gameV2_proto_rawDesc = "" +
 	"actionType\x128\n" +
 	"\acommand\x18\x04 \x01(\v2\x1e.game.network.v2.ActionRequestR\acommand\x12.\n" +
 	"\x06before\x18\x05 \x01(\v2\x16.game.network.v2.StateR\x06before\x12,\n" +
-	"\x05after\x18\x06 \x01(\v2\x16.game.network.v2.StateR\x05after\"d\n" +
+	"\x05after\x18\x06 \x01(\v2\x16.game.network.v2.StateR\x05after\x12F\n" +
+	"\fpresentation\x18\a \x01(\v2\".game.network.v2.PresentationBatchR\fpresentation\"d\n" +
 	"\n" +
 	"LogRequest\x12\x19\n" +
 	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12%\n" +
@@ -1575,7 +1901,45 @@ const file_v2_gameV2_proto_rawDesc = "" +
 	"\x05limit\x18\x03 \x01(\rR\x05limit\"b\n" +
 	"\vLogResponse\x12.\n" +
 	"\x04logs\x18\x01 \x03(\v2\x1a.game.network.v2.ActionLogR\x04logs\x12#\n" +
-	"\rnext_sequence\x18\x02 \x01(\x04R\fnextSequence2\x9f\b\n" +
+	"\rnext_sequence\x18\x02 \x01(\x04R\fnextSequence\"\x95\x02\n" +
+	"\x11PresentationBatch\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12\x1a\n" +
+	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12'\n" +
+	"\x0fbefore_revision\x18\x03 \x01(\x04R\x0ebeforeRevision\x12%\n" +
+	"\x0eafter_revision\x18\x04 \x01(\x04R\rafterRevision\x12\x1d\n" +
+	"\n" +
+	"command_id\x18\x05 \x01(\tR\tcommandId\x12\x1f\n" +
+	"\vaction_type\x18\x06 \x01(\tR\n" +
+	"actionType\x12:\n" +
+	"\x06events\x18\a \x03(\v2\".game.network.v2.PresentationEventR\x06events\"\xd2\x05\n" +
+	"\x11PresentationEvent\x12\x14\n" +
+	"\x05index\x18\x01 \x01(\rR\x05index\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x14\n" +
+	"\x05cause\x18\x03 \x01(\tR\x05cause\x12.\n" +
+	"\x13source_character_id\x18\x04 \x01(\tR\x11sourceCharacterId\x12(\n" +
+	"\x10source_player_id\x18\x05 \x01(\tR\x0esourcePlayerId\x12\x1f\n" +
+	"\vtarget_kind\x18\x06 \x01(\tR\n" +
+	"targetKind\x12\x1b\n" +
+	"\ttarget_id\x18\a \x01(\tR\btargetId\x12#\n" +
+	"\rdefinition_id\x18\b \x01(\tR\fdefinitionId\x12\x1b\n" +
+	"\tskill_key\x18\t \x01(\tR\bskillKey\x12\x1d\n" +
+	"\n" +
+	"skill_name\x18\n" +
+	" \x01(\tR\tskillName\x12!\n" +
+	"\fattack_index\x18\v \x01(\x05R\vattackIndex\x12\x16\n" +
+	"\x06amount\x18\f \x01(\x05R\x06amount\x12!\n" +
+	"\fbefore_value\x18\r \x01(\x05R\vbeforeValue\x12\x1f\n" +
+	"\vafter_value\x18\x0e \x01(\x05R\n" +
+	"afterValue\x12\x16\n" +
+	"\x06effect\x18\x0f \x01(\tR\x06effect\x12\x1a\n" +
+	"\bproperty\x18\x10 \x01(\tR\bproperty\x12\x1f\n" +
+	"\vbefore_text\x18\x11 \x01(\tR\n" +
+	"beforeText\x12\x1d\n" +
+	"\n" +
+	"after_text\x18\x12 \x01(\tR\tafterText\x12-\n" +
+	"\x04from\x18\x13 \x01(\v2\x19.game.network.v2.PositionR\x04from\x12)\n" +
+	"\x02to\x18\x14 \x01(\v2\x19.game.network.v2.PositionR\x02to\x127\n" +
+	"\tdirection\x18\x15 \x01(\v2\x19.game.network.v2.PositionR\tdirection2\x9f\b\n" +
 	"\x0fBattleServiceV2\x12F\n" +
 	"\x05Login\x12\x1d.game.network.v2.LoginRequest\x1a\x1e.game.network.v2.LoginResponse\x12N\n" +
 	"\x0eGetDefinitions\x12\x16.game.network.v2.Empty\x1a$.game.network.v2.DefinitionsResponse\x12K\n" +
@@ -1607,7 +1971,7 @@ func file_v2_gameV2_proto_rawDescGZIP() []byte {
 	return file_v2_gameV2_proto_rawDescData
 }
 
-var file_v2_gameV2_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_v2_gameV2_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_v2_gameV2_proto_goTypes = []any{
 	(*Empty)(nil),               // 0: game.network.v2.Empty
 	(*LoginRequest)(nil),        // 1: game.network.v2.LoginRequest
@@ -1628,14 +1992,16 @@ var file_v2_gameV2_proto_goTypes = []any{
 	(*ActionLog)(nil),           // 16: game.network.v2.ActionLog
 	(*LogRequest)(nil),          // 17: game.network.v2.LogRequest
 	(*LogResponse)(nil),         // 18: game.network.v2.LogResponse
-	nil,                         // 19: game.network.v2.Character.UsedSkillsEntry
+	(*PresentationBatch)(nil),   // 19: game.network.v2.PresentationBatch
+	(*PresentationEvent)(nil),   // 20: game.network.v2.PresentationEvent
+	nil,                         // 21: game.network.v2.Character.UsedSkillsEntry
 }
 var file_v2_gameV2_proto_depIdxs = []int32{
 	8,  // 0: game.network.v2.ActionRequest.target:type_name -> game.network.v2.Position
 	8,  // 1: game.network.v2.ActionRequest.direction:type_name -> game.network.v2.Position
 	8,  // 2: game.network.v2.Base.position:type_name -> game.network.v2.Position
 	8,  // 3: game.network.v2.Character.position:type_name -> game.network.v2.Position
-	19, // 4: game.network.v2.Character.used_skills:type_name -> game.network.v2.Character.UsedSkillsEntry
+	21, // 4: game.network.v2.Character.used_skills:type_name -> game.network.v2.Character.UsedSkillsEntry
 	8,  // 5: game.network.v2.TileEffect.position:type_name -> game.network.v2.Position
 	9,  // 6: game.network.v2.State.players:type_name -> game.network.v2.Player
 	10, // 7: game.network.v2.State.bases:type_name -> game.network.v2.Base
@@ -1645,43 +2011,49 @@ var file_v2_gameV2_proto_depIdxs = []int32{
 	13, // 11: game.network.v2.State.last_event:type_name -> game.network.v2.Event
 	13, // 12: game.network.v2.State.events:type_name -> game.network.v2.Event
 	14, // 13: game.network.v2.Snapshot.state:type_name -> game.network.v2.State
-	7,  // 14: game.network.v2.ActionLog.command:type_name -> game.network.v2.ActionRequest
-	14, // 15: game.network.v2.ActionLog.before:type_name -> game.network.v2.State
-	14, // 16: game.network.v2.ActionLog.after:type_name -> game.network.v2.State
-	16, // 17: game.network.v2.LogResponse.logs:type_name -> game.network.v2.ActionLog
-	1,  // 18: game.network.v2.BattleServiceV2.Login:input_type -> game.network.v2.LoginRequest
-	0,  // 19: game.network.v2.BattleServiceV2.GetDefinitions:input_type -> game.network.v2.Empty
-	4,  // 20: game.network.v2.BattleServiceV2.CreateGame:input_type -> game.network.v2.CreateGameRequest
-	4,  // 21: game.network.v2.BattleServiceV2.GetRoomGame:input_type -> game.network.v2.CreateGameRequest
-	6,  // 22: game.network.v2.BattleServiceV2.RegisterCharacters:input_type -> game.network.v2.SelectionRequest
-	5,  // 23: game.network.v2.BattleServiceV2.Ready:input_type -> game.network.v2.GameRequest
-	5,  // 24: game.network.v2.BattleServiceV2.CancelGame:input_type -> game.network.v2.GameRequest
-	5,  // 25: game.network.v2.BattleServiceV2.GetGameData:input_type -> game.network.v2.GameRequest
-	5,  // 26: game.network.v2.BattleServiceV2.StreamGame:input_type -> game.network.v2.GameRequest
-	7,  // 27: game.network.v2.BattleServiceV2.ApplyMove:input_type -> game.network.v2.ActionRequest
-	7,  // 28: game.network.v2.BattleServiceV2.ApplyAttack:input_type -> game.network.v2.ActionRequest
-	7,  // 29: game.network.v2.BattleServiceV2.EndTurn:input_type -> game.network.v2.ActionRequest
-	7,  // 30: game.network.v2.BattleServiceV2.Surrender:input_type -> game.network.v2.ActionRequest
-	17, // 31: game.network.v2.BattleServiceV2.FetchActionLog:input_type -> game.network.v2.LogRequest
-	2,  // 32: game.network.v2.BattleServiceV2.Login:output_type -> game.network.v2.LoginResponse
-	3,  // 33: game.network.v2.BattleServiceV2.GetDefinitions:output_type -> game.network.v2.DefinitionsResponse
-	15, // 34: game.network.v2.BattleServiceV2.CreateGame:output_type -> game.network.v2.Snapshot
-	15, // 35: game.network.v2.BattleServiceV2.GetRoomGame:output_type -> game.network.v2.Snapshot
-	15, // 36: game.network.v2.BattleServiceV2.RegisterCharacters:output_type -> game.network.v2.Snapshot
-	15, // 37: game.network.v2.BattleServiceV2.Ready:output_type -> game.network.v2.Snapshot
-	15, // 38: game.network.v2.BattleServiceV2.CancelGame:output_type -> game.network.v2.Snapshot
-	15, // 39: game.network.v2.BattleServiceV2.GetGameData:output_type -> game.network.v2.Snapshot
-	15, // 40: game.network.v2.BattleServiceV2.StreamGame:output_type -> game.network.v2.Snapshot
-	15, // 41: game.network.v2.BattleServiceV2.ApplyMove:output_type -> game.network.v2.Snapshot
-	15, // 42: game.network.v2.BattleServiceV2.ApplyAttack:output_type -> game.network.v2.Snapshot
-	15, // 43: game.network.v2.BattleServiceV2.EndTurn:output_type -> game.network.v2.Snapshot
-	15, // 44: game.network.v2.BattleServiceV2.Surrender:output_type -> game.network.v2.Snapshot
-	18, // 45: game.network.v2.BattleServiceV2.FetchActionLog:output_type -> game.network.v2.LogResponse
-	32, // [32:46] is the sub-list for method output_type
-	18, // [18:32] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	19, // 14: game.network.v2.Snapshot.presentation_batches:type_name -> game.network.v2.PresentationBatch
+	7,  // 15: game.network.v2.ActionLog.command:type_name -> game.network.v2.ActionRequest
+	14, // 16: game.network.v2.ActionLog.before:type_name -> game.network.v2.State
+	14, // 17: game.network.v2.ActionLog.after:type_name -> game.network.v2.State
+	19, // 18: game.network.v2.ActionLog.presentation:type_name -> game.network.v2.PresentationBatch
+	16, // 19: game.network.v2.LogResponse.logs:type_name -> game.network.v2.ActionLog
+	20, // 20: game.network.v2.PresentationBatch.events:type_name -> game.network.v2.PresentationEvent
+	8,  // 21: game.network.v2.PresentationEvent.from:type_name -> game.network.v2.Position
+	8,  // 22: game.network.v2.PresentationEvent.to:type_name -> game.network.v2.Position
+	8,  // 23: game.network.v2.PresentationEvent.direction:type_name -> game.network.v2.Position
+	1,  // 24: game.network.v2.BattleServiceV2.Login:input_type -> game.network.v2.LoginRequest
+	0,  // 25: game.network.v2.BattleServiceV2.GetDefinitions:input_type -> game.network.v2.Empty
+	4,  // 26: game.network.v2.BattleServiceV2.CreateGame:input_type -> game.network.v2.CreateGameRequest
+	4,  // 27: game.network.v2.BattleServiceV2.GetRoomGame:input_type -> game.network.v2.CreateGameRequest
+	6,  // 28: game.network.v2.BattleServiceV2.RegisterCharacters:input_type -> game.network.v2.SelectionRequest
+	5,  // 29: game.network.v2.BattleServiceV2.Ready:input_type -> game.network.v2.GameRequest
+	5,  // 30: game.network.v2.BattleServiceV2.CancelGame:input_type -> game.network.v2.GameRequest
+	5,  // 31: game.network.v2.BattleServiceV2.GetGameData:input_type -> game.network.v2.GameRequest
+	5,  // 32: game.network.v2.BattleServiceV2.StreamGame:input_type -> game.network.v2.GameRequest
+	7,  // 33: game.network.v2.BattleServiceV2.ApplyMove:input_type -> game.network.v2.ActionRequest
+	7,  // 34: game.network.v2.BattleServiceV2.ApplyAttack:input_type -> game.network.v2.ActionRequest
+	7,  // 35: game.network.v2.BattleServiceV2.EndTurn:input_type -> game.network.v2.ActionRequest
+	7,  // 36: game.network.v2.BattleServiceV2.Surrender:input_type -> game.network.v2.ActionRequest
+	17, // 37: game.network.v2.BattleServiceV2.FetchActionLog:input_type -> game.network.v2.LogRequest
+	2,  // 38: game.network.v2.BattleServiceV2.Login:output_type -> game.network.v2.LoginResponse
+	3,  // 39: game.network.v2.BattleServiceV2.GetDefinitions:output_type -> game.network.v2.DefinitionsResponse
+	15, // 40: game.network.v2.BattleServiceV2.CreateGame:output_type -> game.network.v2.Snapshot
+	15, // 41: game.network.v2.BattleServiceV2.GetRoomGame:output_type -> game.network.v2.Snapshot
+	15, // 42: game.network.v2.BattleServiceV2.RegisterCharacters:output_type -> game.network.v2.Snapshot
+	15, // 43: game.network.v2.BattleServiceV2.Ready:output_type -> game.network.v2.Snapshot
+	15, // 44: game.network.v2.BattleServiceV2.CancelGame:output_type -> game.network.v2.Snapshot
+	15, // 45: game.network.v2.BattleServiceV2.GetGameData:output_type -> game.network.v2.Snapshot
+	15, // 46: game.network.v2.BattleServiceV2.StreamGame:output_type -> game.network.v2.Snapshot
+	15, // 47: game.network.v2.BattleServiceV2.ApplyMove:output_type -> game.network.v2.Snapshot
+	15, // 48: game.network.v2.BattleServiceV2.ApplyAttack:output_type -> game.network.v2.Snapshot
+	15, // 49: game.network.v2.BattleServiceV2.EndTurn:output_type -> game.network.v2.Snapshot
+	15, // 50: game.network.v2.BattleServiceV2.Surrender:output_type -> game.network.v2.Snapshot
+	18, // 51: game.network.v2.BattleServiceV2.FetchActionLog:output_type -> game.network.v2.LogResponse
+	38, // [38:52] is the sub-list for method output_type
+	24, // [24:38] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_v2_gameV2_proto_init() }
@@ -1695,7 +2067,7 @@ func file_v2_gameV2_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v2_gameV2_proto_rawDesc), len(file_v2_gameV2_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -64,12 +64,50 @@ message Snapshot {
   repeated string selected_player_ids = 4;
   int32 p1_rate = 5; int32 p2_rate = 6; int32 p1_rate_delta = 7; int32 p2_rate_delta = 8;
   string rules_version = 9;
+  // Inclusive, bounded replay window. Dedupe by match_id/sequence/event index.
+  repeated PresentationBatch presentation_batches = 10;
+  uint64 presentation_from_sequence = 11;
 }
 // Each durable transition has full before/after state for exact animation/recovery.
 // This sequence is independent of State.revision (one action may emit several events).
 message ActionLog {
   uint64 sequence = 1; string player_id = 2; string action_type = 3;
   ActionRequest command = 4; State before = 5; State after = 6;
+  // Absent for rows written before presentation events were introduced.
+  PresentationBatch presentation = 7;
 }
 message LogRequest { string match_id = 1; uint64 after_sequence = 2; uint32 limit = 3; }
 message LogResponse { repeated ActionLog logs = 1; uint64 next_sequence = 2; }
+
+message PresentationBatch {
+  uint32 version = 1;
+  uint64 sequence = 2;
+  uint64 before_revision = 3;
+  uint64 after_revision = 4;
+  string command_id = 5;
+  string action_type = 6;
+  repeated PresentationEvent events = 7;
+}
+message PresentationEvent {
+  uint32 index = 1;
+  string type = 2;
+  string cause = 3;
+  string source_character_id = 4;
+  string source_player_id = 5;
+  string target_kind = 6;
+  string target_id = 7;
+  string definition_id = 8;
+  string skill_key = 9;
+  string skill_name = 10;
+  int32 attack_index = 11;
+  int32 amount = 12;
+  int32 before_value = 13;
+  int32 after_value = 14;
+  string effect = 15;
+  string property = 16;
+  string before_text = 17;
+  string after_text = 18;
+  Position from = 19;
+  Position to = 20;
+  Position direction = 21;
+}

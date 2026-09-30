@@ -70,6 +70,7 @@ type Event struct {
 	Text     string `json:"text"`
 }
 type State struct {
+	presentation   *PresentationTrace
 	TestOwnerID    string       `json:"testOwnerId,omitempty"`
 	MatchID        string       `json:"matchId"`
 	Revision       uint64       `json:"revision"`
@@ -174,15 +175,17 @@ func newState(id string, players [2]Player, selections [2][]string, started bool
 
 func (s *State) applyStartPassives() {
 	defer s.applyTurnStartPassives()
-	for _, source := range s.Characters {
+	for sourceIndex, source := range s.Characters {
 		if source.DefinitionID != "sophie" {
 			continue
 		}
+		endPresentation := s.presentationScope("PASSIVE", sourceIndex)
 		for j := range s.Characters {
 			if s.Characters[j].OwnerID == source.OwnerID {
 				s.addEffect(j, "俊足")
 			}
 		}
+		endPresentation()
 	}
 }
 
@@ -311,6 +314,7 @@ func (s *State) ApplyMove(playerID string, c Command) error {
 		return ErrInvalidAction
 	}
 	s.Characters[i].Position = c.Target
+	s.observePresentation()
 	s.spend(playerID, moveCost)
 	s.triggerTile(i)
 	s.commit("MOVED", fmt.Sprintf("%sが移動（コスト%d）", s.Characters[i].Name, moveCost))
@@ -393,6 +397,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 		s.Characters[i].DrankTurn = s.Turn + 2
 		s.Characters[i].HangoverTurn = s.Turn + 4
 		s.Characters[i].HangoverUntil = s.Turn + 6
+		s.observePresentation()
 	}
 	var pushed []int
 	// 地雷はダメージ計算前にまとめて処理し、全対象に同じ加算値を使う。
@@ -401,6 +406,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 			if s.TileEffects[j].Type == "地雷" && containsPosition(cells, s.TileEffects[j].Position) {
 				a.Power += 10 + s.passiveBoost(i)
 				s.TileEffects = append(s.TileEffects[:j], s.TileEffects[j+1:]...)
+				s.observePresentation()
 				affected++
 			}
 		}
@@ -420,6 +426,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 		if !(a.Target == "any" || a.Target == "ally" && same || a.Target == "enemy" && !same) {
 			continue
 		}
+		s.presentationSignal("TARGETED", "CHARACTER", s.Characters[j].ID, "")
 		if !same && s.consumeBarrier(j) {
 			affected++
 			continue
@@ -435,6 +442,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 			}
 		}
 		s.Characters[j].HP = clamp(s.Characters[j].HP-power, 0, s.Characters[j].MaxHP)
+		s.observePresentation()
 		if a.ClearDebuffs {
 			s.clearDebuffs(j)
 		}
@@ -447,10 +455,14 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 		if chance := passiveFor(d.ID).ExtraAttackChance; chance > 0 && !same && s.Characters[j].HP > 0 && s.roll(i, j, "過量使用", chance+s.passiveBoost(i)) {
 			// 追撃から追撃は発動しない。追加攻撃のデバフは独立判定。
 			extraPower := power * passiveFor(d.ID).ExtraAttackDamagePercent / 100
+			endPresentation := s.presentationScope("FOLLOW_UP", i)
+			s.presentationSignal("TARGETED", "CHARACTER", s.Characters[j].ID, "")
 			s.Characters[j].HP = clamp(s.Characters[j].HP-extraPower, 0, s.Characters[j].MaxHP)
+			s.observePresentation()
 			if a.Effect != "" && s.roll(i, j, a.Effect+"追撃", a.EffectChance) {
 				s.addEffect(j, a.Effect)
 			}
+			endPresentation()
 		}
 		affected++
 		if d.ID == "kasuima" && c.AttackIndex == 2 && s.Characters[j].HP > 0 {
@@ -465,6 +477,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 			for j := range s.Characters {
 				if s.Characters[j].DefinitionID == "shicho" && s.Characters[j].HP > 0 {
 					s.Characters[j].HP = max(0, s.Characters[j].HP-40)
+					s.observePresentation()
 					affected++
 				}
 			}
@@ -473,6 +486,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 			for j := len(s.TileEffects) - 1; j >= 0; j-- {
 				if s.TileEffects[j].OwnerID != playerID && containsPosition(cells, s.TileEffects[j].Position) {
 					s.TileEffects = append(s.TileEffects[:j], s.TileEffects[j+1:]...)
+					s.observePresentation()
 					affected++
 				}
 			}
@@ -482,6 +496,7 @@ func (s *State) ApplyAttack(playerID string, c Command) error {
 		for j := range s.Bases {
 			if (a.Target == "any" || s.Bases[j].OwnerID != playerID) && containsPosition(cells, s.Bases[j].Position) {
 				s.Bases[j].HP = clamp(s.Bases[j].HP-s.attackPower(i, a.Power), 0, s.Bases[j].MaxHP)
+				s.observePresentation()
 				affected++
 			}
 		}
@@ -686,6 +701,7 @@ func (s *State) cost(id string) int {
 	return 0
 }
 func (s *State) spend(id string, n int) {
+	defer s.observePresentation()
 	for i := range s.Players {
 		if s.Players[i].ID == id {
 			s.Players[i].Cost -= n
@@ -699,6 +715,7 @@ func (s *State) record(e Event) {
 	}
 }
 func (s *State) commit(t, text string) {
+	s.observePresentation()
 	s.Revision++
 	s.LastEvent = Event{Sequence: s.Revision, Type: t, Text: text}
 	s.record(s.LastEvent)
@@ -707,6 +724,7 @@ func (s *State) checkWinner() {
 	for i := range s.Characters {
 		c := &s.Characters[i]
 		if c.DefinitionID == "sophie" && c.HP <= 0 && !c.DepartureUsed {
+			endPresentation := s.presentationScope("PASSIVE", i)
 			c.DepartureUsed = true
 			for j := range s.Characters {
 				if s.Characters[j].OwnerID != c.OwnerID && s.Characters[j].HP > 0 {
@@ -714,16 +732,20 @@ func (s *State) checkWinner() {
 				}
 			}
 			s.commit("PASSIVE_ACTIVATED", "ソフィーの播種：敵全体に鈍足")
+			endPresentation()
 		}
 	}
 	// 撃破・毒・地雷などの解決後、勝敗を決める前に一度だけ復活する。
 	for i := range s.Characters {
 		c := &s.Characters[i]
 		if c.DefinitionID == "verbulus" && c.HP <= 0 && !c.ReviveUsed {
+			endPresentation := s.presentationScope("REVIVE", i)
 			c.ReviveUsed = true
 			c.Effects = []string{}
+			s.observePresentation()
 			c.HP = min(c.MaxHP, 50+s.passiveBoost(i))
 			s.commit("REVIVED", fmt.Sprintf("%sが輪廻転生により全バフ・デバフを解除しHP%dで復活", c.Name, c.HP))
+			endPresentation()
 		}
 	}
 	alive := [2]int{}

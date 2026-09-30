@@ -14,6 +14,7 @@ func (s *State) hasEffect(character int, effect string) bool {
 	return false
 }
 func (s *State) addEffect(character int, effect string) {
+	defer s.observePresentation()
 	if s.Characters[character].DefinitionID == "kasuima" && isBuff(effect) {
 		return
 	}
@@ -21,6 +22,7 @@ func (s *State) addEffect(character int, effect string) {
 		return
 	}
 	if !isBuff(effect) && s.hasEffect(character, "免疫") {
+		s.presentationSignal("EFFECT_BLOCKED", "CHARACTER", s.Characters[character].ID, effect)
 		s.removeEffect(character, "免疫")
 		return
 	}
@@ -47,6 +49,7 @@ func (s *State) hasDebuff(character int) bool {
 	return false
 }
 func (s *State) clearDebuffs(character int) {
+	defer s.observePresentation()
 	kept := s.Characters[character].Effects[:0]
 	for _, effect := range s.Characters[character].Effects {
 		if !isDebuff(effect) {
@@ -57,6 +60,7 @@ func (s *State) clearDebuffs(character int) {
 }
 
 func (s *State) clearBuffs(character int) {
+	defer s.observePresentation()
 	kept := s.Characters[character].Effects[:0]
 	for _, effect := range s.Characters[character].Effects {
 		if !isBuff(effect) {
@@ -127,6 +131,7 @@ func (s *State) baseAt(position Position) int {
 	return -1
 }
 func (s *State) setTile(position Position, tileType, ownerID string) {
+	defer s.observePresentation()
 	tile := TileEffect{Position: position, Type: tileType, OwnerID: ownerID}
 	if tileType == "不変" {
 		tile.HP = 170
@@ -143,9 +148,11 @@ func (s *State) immutableAt(position Position) bool {
 }
 
 func (s *State) damageImmutable(index, amount int) {
+	defer s.observePresentation()
 	tile := &s.TileEffects[index]
 	damage := min(tile.HP, max(0, amount))
 	tile.HP -= damage
+	s.observePresentation()
 	text := fmt.Sprintf("不変マス(%d,%d)に%dダメージ（残りHP%d）", tile.Position.X, tile.Position.Y, damage, tile.HP)
 	if tile.HP <= 0 {
 		s.TileEffects = append(s.TileEffects[:index], s.TileEffects[index+1:]...)
@@ -164,9 +171,23 @@ func (s *State) triggerTile(character int) {
 	if id == "tsukiha" || id == "berenice" && tile.Type == "地雷" {
 		return
 	}
+	cause := "TILE"
+	switch tile.Type {
+	case "地雷":
+		cause = "MINE"
+	case "まきびし":
+		cause = "SPIKES"
+	case "毒ガス":
+		cause = "GAS"
+	}
+	defer s.presentationScope(cause, -1)()
+	if s.presentation != nil {
+		s.presentation.context.SourcePlayerID = tile.OwnerID
+	}
 	switch tile.Type {
 	case "地雷":
 		s.Characters[character].HP = clamp(s.Characters[character].HP-100, 0, s.Characters[character].MaxHP)
+		s.observePresentation()
 		s.TileEffects = append(s.TileEffects[:index], s.TileEffects[index+1:]...)
 	case "まきびし":
 		s.Characters[character].HP = clamp(s.Characters[character].HP-10, 0, s.Characters[character].MaxHP)
@@ -182,6 +203,7 @@ func (s *State) ignoresDebuffTiles(character int) bool {
 }
 
 func (s *State) processTurnEnd(playerID string) {
+	defer s.presentationScope("TURN_END", -1)()
 	// 同時に解決されるターン終了時効果は、回復をすべて適用してから
 	// ダメージを適用する。途中のHPで勝敗判定は行わない。
 	healedTargets := 0
@@ -210,17 +232,24 @@ func (s *State) processTurnEnd(playerID string) {
 			continue
 		}
 		if s.hasEffect(i, "毒") {
+			endPresentation := s.presentationScope("POISON", -1)
 			before := c.HP
 			c.HP = clamp(c.HP-40, 0, c.MaxHP)
 			poisonedTargets++
 			poisonDamage += before - c.HP
+			endPresentation()
 		}
 		if tile := s.tileAt(c.Position); tile >= 0 && s.TileEffects[tile].Type == "毒ガス" && !s.ignoresDebuffTiles(i) {
+			endPresentation := s.presentationScope("GAS", -1)
+			if s.presentation != nil {
+				s.presentation.context.SourcePlayerID = s.TileEffects[tile].OwnerID
+			}
 			alreadyPoisoned := s.hasEffect(i, "毒")
 			s.addEffect(i, "毒")
 			if !alreadyPoisoned && s.hasEffect(i, "毒") {
 				gasPoisonedTargets++
 			}
+			endPresentation()
 		}
 		effects := c.Effects[:0]
 		for _, effect := range c.Effects {
@@ -242,6 +271,7 @@ func (s *State) processTurnEnd(playerID string) {
 		if c.DefinitionID == "suima" {
 			c.Wriggling = !c.Wriggling
 		}
+		s.observePresentation()
 	}
 	if poisonedTargets > 0 {
 		s.commit("TURN_END_DAMAGE", fmt.Sprintf("%d体が毒により合計%dダメージ", poisonedTargets, poisonDamage))
@@ -256,12 +286,14 @@ func (s *State) processTurnEnd(playerID string) {
 	}
 }
 func (s *State) healNearby(source, amount int) (int, int) {
+	defer s.presentationScope("PASSIVE", source)()
 	targets := 0
 	total := 0
 	for i := range s.Characters {
 		if !(i == source && passiveFor(s.Characters[source].DefinitionID).ExcludeSelf) && s.Characters[i].HP > 0 && s.Characters[i].OwnerID == s.Characters[source].OwnerID && inSurroundingArea(s.Characters[i].Position, s.Characters[source].Position) {
 			before := s.Characters[i].HP
 			s.Characters[i].HP = clamp(s.Characters[i].HP+amount, 0, s.Characters[i].MaxHP)
+			s.observePresentation()
 			if healed := s.Characters[i].HP - before; healed > 0 {
 				targets++
 				total += healed
@@ -291,6 +323,7 @@ func (s *State) hasBuff(i int) bool {
 	return false
 }
 func (s *State) removeEffect(i int, effect string) {
+	defer s.observePresentation()
 	kept := s.Characters[i].Effects[:0]
 	for _, e := range s.Characters[i].Effects {
 		if e != effect {
@@ -312,6 +345,7 @@ func (s *State) randomEffect(actor int, includeDebuffs bool) string {
 	return effects[s.randomIndex(actor, "effect", len(effects))]
 }
 func (s *State) applyTurnStartPassives() {
+	defer s.presentationScope("TURN_START", -1)()
 	for i, c := range s.Characters {
 		if c.BarrierTurn < s.Turn {
 			s.removeEffect(i, "結界")
@@ -332,10 +366,13 @@ func (s *State) applyTurnStartPassives() {
 		}
 		j := targets[s.randomIndex(i, "target", len(targets))]
 		effect := s.randomEffect(i, true)
+		endPresentation := s.presentationScope("PASSIVE", i)
 		s.addEffect(j, effect)
+		endPresentation()
 	}
 }
 func (s *State) applyLouiseSkill(actor, attack int) {
+	defer s.observePresentation()
 	if attack == 2 {
 		s.Characters[actor].CombatStance = !s.Characters[actor].CombatStance
 		return
@@ -350,6 +387,7 @@ func (s *State) applyLouiseSkill(actor, attack int) {
 		} else {
 			if j != actor {
 				s.Characters[j].HP = min(c.MaxHP, c.HP+50)
+				s.observePresentation()
 			}
 			s.addEffect(j, "結界")
 		}
@@ -357,6 +395,7 @@ func (s *State) applyLouiseSkill(actor, attack int) {
 }
 func (s *State) consumeBarrier(i int) bool {
 	if s.hasEffect(i, "結界") && s.Characters[i].BarrierTurn == s.Turn {
+		s.presentationSignal("ATTACK_BLOCKED", "CHARACTER", s.Characters[i].ID, "結界")
 		s.removeEffect(i, "結界")
 		return true
 	}

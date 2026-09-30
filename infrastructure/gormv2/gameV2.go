@@ -17,11 +17,14 @@ import (
 
 const RulesVersion = "web-2026-09-26-v2"
 
+const PresentationWindow = 32
+
 var ErrForbidden = errors.New("not a participant or room member")
 var ErrPrecondition = errors.New("invalid match lifecycle")
 var ErrCommandConflict = errors.New("command ID reused with different payload")
 
 type Match struct {
+	PresentationJSON                         string `gorm:"type:longtext"`
 	ID                                       string `gorm:"type:varchar(36);primaryKey"`
 	RoomID                                   uint32 `gorm:"index"`
 	StateJSON                                string `gorm:"type:longtext;not null"`
@@ -36,14 +39,15 @@ type Match struct {
 func (Match) TableName() string { return "battle_v2_matches" }
 
 type Transition struct {
-	MatchID     string `gorm:"type:varchar(36);primaryKey"`
-	Sequence    uint64 `gorm:"primaryKey;autoIncrement:false"`
-	PlayerID    string `gorm:"type:varchar(36)"`
-	ActionType  string
-	CommandJSON string `gorm:"type:longtext"`
-	BeforeJSON  string `gorm:"type:longtext"`
-	AfterJSON   string `gorm:"type:longtext"`
-	CreatedAt   time.Time
+	PresentationJSON string `gorm:"type:longtext"`
+	MatchID          string `gorm:"type:varchar(36);primaryKey"`
+	Sequence         uint64 `gorm:"primaryKey;autoIncrement:false"`
+	PlayerID         string `gorm:"type:varchar(36)"`
+	ActionType       string
+	CommandJSON      string `gorm:"type:longtext"`
+	BeforeJSON       string `gorm:"type:longtext"`
+	AfterJSON        string `gorm:"type:longtext"`
+	CreatedAt        time.Time
 }
 
 func (Transition) TableName() string { return "battle_v2_transitions" }
@@ -58,9 +62,10 @@ type Receipt struct {
 func (Receipt) TableName() string { return "battle_v2_commands" }
 
 type View struct {
-	Match      Match
-	State      *game.State
-	Selections [2][]string
+	PresentationEvents []game.PresentationEvent
+	Match              Match
+	State              *game.State
+	Selections         [2][]string
 }
 type Store struct{ DB *gorm.DB }
 
@@ -279,9 +284,11 @@ func (s *Store) change(ctx context.Context, id, player, kind string, fn func(*Vi
 			return ErrForbidden
 		}
 		before := v.Match.StateJSON
+		trace := game.StartPresentation(v.State, player, kind, nil)
 		if err := fn(v); err != nil {
 			return err
 		}
+		v.PresentationEvents = trace.Finish(v.State)
 		if err := s.save(tx, v, player, kind, "", before); err != nil {
 			return err
 		}
@@ -322,6 +329,7 @@ func (s *Store) Apply(ctx context.Context, id, player, kind string, c game.Comma
 			return err
 		}
 		before := v.Match.StateJSON
+		trace := game.StartPresentation(v.State, player, kind, &c)
 		switch kind {
 		case "MOVE":
 			actionErr = v.State.ApplyMove(player, c)
@@ -337,6 +345,7 @@ func (s *Store) Apply(ctx context.Context, id, player, kind string, c game.Comma
 		if actionErr != nil {
 			return nil
 		}
+		v.PresentationEvents = trace.Finish(v.State)
 		raw, _ := json.Marshal(c)
 		if err := s.save(tx, v, player, kind, string(raw), before); err != nil {
 			return err
@@ -379,7 +388,46 @@ func (s *Store) save(tx *gorm.DB, v *View, player, kind, command, before string)
 	v.Match.Finished = v.State.Finished
 	v.Match.Started = v.State.Started
 	v.Match.LogSequence++
+	batch := game.PresentationBatch{Version: 1, Sequence: v.Match.LogSequence, AfterRevision: v.State.Revision, ActionType: kind, Events: v.PresentationEvents}
+	if before != "" {
+		var prior game.State
+		if err := json.Unmarshal([]byte(before), &prior); err != nil {
+			return err
+		}
+		batch.BeforeRevision = prior.Revision
+	}
+	if command != "" {
+		var c game.Command
+		if err := json.Unmarshal([]byte(command), &c); err != nil {
+			return err
+		}
+		batch.CommandID = c.ID
+	}
+	if kind == "CREATED" {
+		batch.Events = []game.PresentationEvent{{Type: "MATCH_CREATED", Cause: kind, TargetKind: "MATCH"}}
+	}
+	presentation, err := json.Marshal(batch)
+	if err != nil {
+		return err
+	}
+	var window []game.PresentationBatch
+	if v.Match.PresentationJSON != "" {
+		if err := json.Unmarshal([]byte(v.Match.PresentationJSON), &window); err != nil {
+			return err
+		}
+	}
+	window = append(window, batch)
+	if len(window) > PresentationWindow {
+		window = window[len(window)-PresentationWindow:]
+	}
+	windowJSON, err := json.Marshal(window)
+	if err != nil {
+		return err
+	}
+	v.Match.PresentationJSON = string(windowJSON)
+	v.PresentationEvents = nil
 	log := Transition{MatchID: v.Match.ID, Sequence: v.Match.LogSequence, PlayerID: player, ActionType: kind, CommandJSON: command, BeforeJSON: before, AfterJSON: string(raw)}
+	log.PresentationJSON = string(presentation)
 	if err := tx.Create(&log).Error; err != nil {
 		return err
 	}
@@ -431,7 +479,9 @@ func settle(tx *gorm.DB, v *View) error {
 func (s *Store) expire(tx *gorm.DB, v *View, now time.Time) error {
 	before := v.Match.StateJSON
 	rev := v.State.Revision
+	trace := game.StartPresentation(v.State, "", "TIMER", nil)
 	v.State.ExpireTurn(now)
+	v.PresentationEvents = trace.Finish(v.State)
 	if v.State.Revision != rev {
 		return s.save(tx, v, "", "TIMER", "", before)
 	}

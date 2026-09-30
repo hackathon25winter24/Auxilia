@@ -92,6 +92,23 @@ func snapshot(v *store.View, err error) (*pb.Snapshot, error) {
 		return nil, rpcError(err)
 	}
 	result := &pb.Snapshot{RoomId: v.Match.RoomID, State: state, LastLogSequence: v.Match.LogSequence, RulesVersion: store.RulesVersion, P1Rate: int32(v.Match.P1Rate), P2Rate: int32(v.Match.P2Rate), P1RateDelta: int32(v.Match.P1RateDelta), P2RateDelta: int32(v.Match.P2RateDelta)}
+	result.PresentationFromSequence = v.Match.LogSequence + 1
+	if v.Match.PresentationJSON != "" {
+		var batches []json.RawMessage
+		if err := json.Unmarshal([]byte(v.Match.PresentationJSON), &batches); err != nil {
+			return nil, rpcError(err)
+		}
+		for _, raw := range batches {
+			batch := &pb.PresentationBatch{}
+			if err := protojson.Unmarshal(raw, batch); err != nil {
+				return nil, rpcError(err)
+			}
+			result.PresentationBatches = append(result.PresentationBatches, batch)
+		}
+		if len(result.PresentationBatches) > 0 {
+			result.PresentationFromSequence = result.PresentationBatches[0].Sequence
+		}
+	}
 	for i, picks := range v.Selections {
 		if len(picks) == 3 {
 			result.SelectedPlayerIds = append(result.SelectedPlayerIds, v.State.Players[i].ID)
@@ -244,6 +261,12 @@ func (h *Handler) FetchActionLog(ctx context.Context, r *pb.LogRequest) (*pb.Log
 	result := &pb.LogResponse{NextSequence: r.AfterSequence}
 	for _, row := range rows {
 		entry := &pb.ActionLog{Sequence: row.Sequence, PlayerId: row.PlayerID, ActionType: row.ActionType}
+		if row.PresentationJSON != "" {
+			entry.Presentation = &pb.PresentationBatch{}
+			if err := protojson.Unmarshal([]byte(row.PresentationJSON), entry.Presentation); err != nil {
+				return nil, rpcError(err)
+			}
+		}
 		if row.BeforeJSON != "" {
 			entry.Before, err = stateProto(row.BeforeJSON)
 			if err != nil {

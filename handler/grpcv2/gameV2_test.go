@@ -293,5 +293,10 @@ func TestGRPCWebUnaryAndServerStream(t *testing.T) {
 	}
 	if got := readSnapshot(streaming); got.State.Phase != "turn_end" {
 		t.Fatal("grpc-web update missing")
+	} else {
+		batch := lastPresentation(t, got)
+		if batch.CommandId != "web-end" || len(batch.Events) == 0 {
+			t.Fatal("grpc-web omitted presentation")
+		}
 	}
 }

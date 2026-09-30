@@ -1,6 +1,7 @@
 # Auxilia V2 APIリファレンス
 
-更新日: 2026-09-26。現在のproto・ハンドラー・保存処理に基づく。
+更新日: 2026-09-30。現在のproto・ハンドラー・保存処理に基づく。
+構造化演出イベントの詳細は [演出イベント仕様](battle-v2-presentation.md) を参照。
 設計・導入手順は [battle-v2.md](battle-v2.md) を参照。
 
 ## 1. 通信と共通仕様
@@ -183,7 +184,8 @@ SetReadyだけでは試合を作らず、CreateGameだけでは戦闘を始め�
 
 - 接続時に最新Snapshotを1件送る。
 - 約250msごとに確認し、`last_log_sequence` が変化したときに最新Snapshotを送る。
-- すべての中間状態を1件ずつ送る保証はない。欠落した遷移はFetchActionLogで補う。
+- すべての中間Stateを1件ずつ送る保証はないが、直近32遷移の演出イベントを同梱する。
+  同梱範囲より古い欠落分だけFetchActionLogで補う。
 - 終了済みSnapshotを送信するとストリームは正常終了する。
 - クライアントのキャンセル・接続断・認証期限切れ・権限喪失等でも終了する。
 - 無変化時の時刻通知はない。画面の残り時間は最後の `server_time` と期限から表示する。
@@ -270,6 +272,7 @@ ActionLog:
 | `command` | ActionRequest | 4種の操作RPCの要求情報。それ以外では未設定 |
 | `before` | State | 遷移前状態。CREATEDでは未設定 |
 | `after` | State | 遷移後状態 |
+| `presentation` | PresentationBatch | 同じ遷移の構造化演出イベント。導入前の履歴では未設定 |
 
 `before`／`after`は保存時点の状態で、`server_time`は現在時刻を表すものではない。
 次のページは `after_sequence=next_sequence` として取得し、logsが空なら追いついている。
@@ -420,6 +423,8 @@ match_idは返さないため、`BattleServiceV2/GetRoomGame` で取得する。
 | `p1_rate` / `p2_rate` | int32 | 結果確定後のレート。それまでは0 |
 | `p1_rate_delta` / `p2_rate_delta` | int32 | その試合によるレート変動。未確定・開始前中止では0 |
 | `rules_version` | string | ルール識別子 |
+| `presentation_batches` | PresentationBatch[] | 直近最大32遷移の演出イベント。sequence昇順 |
+| `presentation_from_sequence` | uint64 | 同梱範囲の先頭sequence。空ならlast_log_sequence+1 |
 
 ### State
 
@@ -621,7 +626,9 @@ RegisterCharactersやJoinRoom等を同じ感覚で無条件再送しない。
 
 Unary応答とストリームが前後して届く場合、同一match_id内で古いlast_log_sequenceの
 Snapshotを反映しない。ログ取得にはrevisionではなくActionLog.sequenceを使う。
-HP・位置・効果の演出はログのbefore/afterを用い、最終的にはSnapshotへ同期する。
+通常の演出は同梱のpresentation_batchesを使用し、最終状態はSnapshotへ同期する。
+before/afterは状態の復旧・確認にも利用できる。イベント型・処理手順は
+[演出イベント仕様](battle-v2-presentation.md)を参照。
 
 ## 9. 現在提供していない操作
 
