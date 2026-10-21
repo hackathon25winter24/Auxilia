@@ -1,0 +1,57 @@
+syntax = "proto3";
+package game.network.v2;
+option go_package = "auxilia/pb/v2;pbv2";
+option csharp_namespace = "Game.Network.V2";
+
+// Actor identity always comes from the Bearer session.
+service LobbyServiceV2 {
+  rpc CreateLobby(CreateLobbyRequest) returns (RoomSnapshot);
+  rpc JoinLobby(LobbyRequest) returns (RoomSnapshot);
+  rpc GetLobby(LobbyRequest) returns (RoomSnapshot);
+  rpc WatchRoom(LobbyRequest) returns (stream RoomSnapshot);
+  rpc ApplyRoomCommand(RoomCommand) returns (RoomSnapshot);
+}
+message CreateLobbyRequest { string room_name = 1; }
+message LobbyRequest { uint32 room_id = 1; }
+enum RoomAction {
+  ROOM_ACTION_UNSPECIFIED = 0;
+  ENTER_RING = 1;
+  LEAVE_RING = 2;
+  SET_READY = 3;
+  RENAME = 4;
+  START_MATCH = 5;
+  LEAVE_ROOM = 6;
+}
+message RoomCommand {
+  uint32 room_id = 1;
+  RoomAction action = 2;
+  bool ready = 3;
+  string room_name = 4;
+  // Required optimistic concurrency token from the last RoomSnapshot.
+  uint64 expected_revision = 5;
+}
+enum LobbyPhase { LOBBY_PHASE_UNSPECIFIED = 0; WAITING = 1; SELECTING = 2; BATTLING = 3; CLOSED = 4; }
+message LobbyMember {
+  string user_id = 1;
+  string name = 2;
+  int32 rate = 3;
+  int32 seat = 4; // 0 spectator, 1 player one, 2 player two
+  bool ready = 5;
+  string joined_at = 6;
+}
+message RoomSnapshot {
+  uint32 room_id = 1;
+  uint64 revision = 2;
+  string room_name = 3;
+  string owner_id = 4;
+  LobbyPhase phase = 5;
+  string match_id = 6; // active match only; empty after completion/cancellation
+  repeated LobbyMember members = 7;
+  bool can_start = 8; // viewer-specific
+  string start_block_reason = 9;
+  bool can_ready = 10;
+  bool can_rename = 11;
+  bool can_enter_ring = 12;
+  bool can_leave_ring = 13;
+  bool can_leave_room = 14;
+}

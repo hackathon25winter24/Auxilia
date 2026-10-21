@@ -41,10 +41,11 @@ func (r *RoomRepository) JoinRoom(roomID int32, userID string) ([]model.Room, er
       return err
     }
 
-    // 2. 既に同じユーザーが参加している場合は削除する
-    if err := tx.Where("room_id = ? AND user_id = ?", roomID, userID).Delete(&model.Room{}).Error; err != nil {
-      return err
-    }
+    // Rejoining preserves the existing seat and ready flag.
+    var existing model.Room
+    err := tx.Where("room_id = ? AND user_id = ?", roomID, userID).First(&existing).Error
+    if err == nil { return tx.Where("room_id = ?", roomID).Find(&rooms).Error }
+    if !errors.Is(err, gorm.ErrRecordNotFound) { return err }
 
     // 3. 現在の参加人数を取得
     var count int64
@@ -130,7 +131,7 @@ func (r *RoomRepository) LeaveRoom(roomID int32, userID string) error {
 
 		if roomMatch.OwnerID == userID {
 			var nextOwner model.Room
-			if err := tx.Where("room_id = ?", roomID).Order("joined_at ASC").First(&nextOwner).Error; err != nil {
+			if err := tx.Where("room_id = ?", roomID).Order("joined_at ASC, user_id ASC").First(&nextOwner).Error; err != nil {
 				return err
 			}
 

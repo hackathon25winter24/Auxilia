@@ -71,7 +71,7 @@ type Store struct{ DB *gorm.DB }
 
 func New(db *gorm.DB) *Store { return &Store{DB: db} }
 func (s *Store) Migrate() error {
-	return s.DB.AutoMigrate(&Match{}, &Transition{}, &Receipt{}, &Session{})
+	return s.DB.AutoMigrate(&Match{}, &Transition{}, &Receipt{}, &Session{}, &LobbyVersion{})
 }
 func decode(m Match) (*View, error) {
 	v := &View{Match: m, State: &game.State{}}
@@ -132,15 +132,20 @@ func (s *Store) Create(ctx context.Context, roomID uint32, player string) (*View
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&room, "id = ?", roomID).Error; err != nil {
 			return err
 		}
+		// All creation routes, including the older Battle/CreateGame RPC, share
+		// the same ownership rule. A spectator owner may start two ready players.
+		if room.OwnerID != player {
+			return ErrForbidden
+		}
+		if err := lobbyMember(tx, roomID, player); err != nil {
+			return err
+		}
 		var existing Match
 		err := tx.Where("room_id = ? AND finished = ?", roomID, false).First(&existing).Error
 		if err == nil {
 			v, e := decode(existing)
 			if e != nil {
 				return e
-			}
-			if side(v.State, player) < 0 {
-				return ErrForbidden
 			}
 			result = v
 			return nil
@@ -169,9 +174,6 @@ func (s *Store) Create(ctx context.Context, roomID uint32, player string) (*View
 		}
 		if players[0].ID == "" || players[1].ID == "" || players[0].ID == players[1].ID {
 			return ErrPrecondition
-		}
-		if player != players[0].ID && player != players[1].ID {
-			return ErrForbidden
 		}
 		id := uuid.NewString()
 		st := game.NewPendingState(id, players, [2][]string{})

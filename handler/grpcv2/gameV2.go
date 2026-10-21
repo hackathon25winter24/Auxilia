@@ -32,6 +32,7 @@ func Register(server *grpc.Server, s *store.Store) *Handler {
 	pb.RegisterBattleServiceV2Server(server, h)
 	pb.RegisterRoomServiceV2Server(server, NewRoom(h))
 	pb.RegisterRoomMatchServiceV2Server(server, NewRoomMatch(h))
+	pb.RegisterLobbyServiceV2Server(server, &LobbyHandler{Battle: h})
 	return h
 }
 func rpcError(err error) error {
@@ -43,6 +44,8 @@ func rpcError(err error) error {
 		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.Is(err, store.ErrForbidden):
 		return status.Error(codes.PermissionDenied, err.Error())
+	case errors.Is(err, store.ErrLobbyFull):
+		return status.Error(codes.ResourceExhausted, err.Error())
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		return status.Error(codes.NotFound, "match or room not found")
 	case errors.Is(err, game.ErrStaleRevision):

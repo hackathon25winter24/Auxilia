@@ -22,8 +22,6 @@ import (
 	httpserver "auxilia/handler/http"
 	gorm "auxilia/infrastructure/gorm"
 	"auxilia/pb"
-
-	"time"
 )
 
 func main() {
@@ -92,17 +90,11 @@ func main() {
 	battleHandlerV2 := handlerv2.Register(s, battleStoreV2)
 	pb.RegisterUserServiceServer(s, handlerv2.NewUserGuard(battleHandlerV2))
 	go battleHandlerV2.Run(context.Background())
-	roomRepo := gorm.NewRoomRepository(db)
 
 	reflection.Register(s)
 
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute) // 1分おきにチェック
-		for range ticker.C {
-			// 3分以上動きがない（joined_atが古い）待機ユーザーを削除
-			roomRepo.TimeoutLeavers(180)
-		}
-	}()
+	// A connection loss is not a leave. joined_at is not a heartbeat;
+	// preserve membership until explicit leave (or a future lease policy).
 
 	// --- 以下、既存のハイブリッドサーバー設定（変更なし） ---
 	httpHandler := httpserver.NewHandler(s)

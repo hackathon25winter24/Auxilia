@@ -128,6 +128,9 @@ func (h *RoomHandler) UpdateRoomState(ctx context.Context, r *pb.UpdateRoomState
 	if r.State < 0 || r.State > 2 {
 		return nil, status.Error(codes.InvalidArgument, "invalid state")
 	}
+	if r.State == 0 && r.IsReady {
+		return nil, status.Error(codes.FailedPrecondition, "spectator cannot ready")
+	}
 	err := h.mutate(ctx, r.RoomId, r.UserId, func(repo *legacy.RoomRepository) error {
 		return repo.UpdateRoomState(ctx, r.RoomId, r.UserId, r.State, r.IsReady)
 	})

@@ -92,7 +92,10 @@ func TestAtomicCreationSelectionAndParticipantChecks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	duplicate, err := s.Create(ctx, room, ids[1])
+	if _, err := s.Create(ctx, room, ids[1]); !errors.Is(err, ErrForbidden) {
+		t.Fatal("non-owner creation", err)
+	}
+	duplicate, err := s.Create(ctx, room, ids[0])
 	if err != nil || duplicate.Match.ID != v.Match.ID {
 		t.Fatal("duplicate creation", err)
 	}
