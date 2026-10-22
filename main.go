@@ -36,7 +36,9 @@ func main() {
 	}
 
 	// （RoomMatch を忘れるとテーブルがなくてクエリが失敗する）
-	db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{}, &model.AttackInfo{}, &model.Grid{})
+	if err := db.AutoMigrate(&model.User{}, &model.RoomMatch{}, &model.Room{}, &model.GameData{}, &model.UniqueCharacter{}, &model.CharacterCondition{}, &model.AttackInfo{}, &model.Grid{}); err != nil {
+		log.Fatalf("legacy schema migration failed: %v", err)
+	}
 
 	// room_matches の is_private を is_gaming に移行し、既存値はすべて false に揃える
 	migratedFromIsPrivate := false
@@ -107,7 +109,16 @@ func main() {
 		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool { return true }), //flashを許可
 	)
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("failed to access DB connection: %v", err)
+	}
+	readiness := httpserver.Readiness(sqlDB.PingContext)
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/healthz" {
+			readiness.ServeHTTP(w, r)
+			return
+		}
 		// Unityからの通信（gRPC-Web特有の通信）ならラッパーに処理させる
 		if wrappedGrpc.IsGrpcWebRequest(r) || wrappedGrpc.IsAcceptableGrpcCorsRequest(r) || wrappedGrpc.IsGrpcWebSocketRequest(r) {
 			wrappedGrpc.ServeHTTP(w, r)

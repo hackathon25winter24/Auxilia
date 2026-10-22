@@ -1,0 +1,44 @@
+name: auxilia-local
+
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: local_root_password
+      MARIADB_DATABASE: auxilia_local
+      MARIADB_USER: auxilia_local
+      MARIADB_PASSWORD: local_dev_password
+    volumes:
+      - local-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${AUXILIA_LOCAL_PORT:-18080}:8080"
+    environment:
+      NS_MARIADB_HOSTNAME: db
+      NS_MARIADB_PORT: "3306"
+      NS_MARIADB_DATABASE: auxilia_local
+      NS_MARIADB_USER: auxilia_local
+      NS_MARIADB_PASSWORD: local_dev_password
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  local-db:
